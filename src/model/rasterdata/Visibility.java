@@ -37,4 +37,12 @@ public class Visibility {
         cB.clear();
         dB.clear();
      }
+
+    public int getWidth() {
+        return cB.getWidth();
+    }
+
+    public int getHeight() {
+        return cB.getHeight();
+    }
 }

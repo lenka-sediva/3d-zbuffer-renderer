@@ -28,9 +28,9 @@ public class Controller {
         //ZBufferTest.runTest(vB); // barevné obdélníky
 
         // vrcholy pro první trojúhelník
-        Point3D t1a = new Point3D(0., ((double) canvas.getHeight() / 2) - 1, 0.8);
+        Point3D t1a = new Point3D(0., ((double) canvas.getHeight() / 2) - 1, 0.5);
         Point3D t1b = new Point3D(((double) canvas.getWidth() / 2) - 1, 0., 0.5);
-        Point3D t1c = new Point3D(canvas.getWidth() - 1, canvas.getHeight() - 1, 0.5); // TODO z nefunguje = když z = 0.1, tak funguje
+        Point3D t1c = new Point3D(canvas.getWidth() - 1, canvas.getHeight() - 1, 0.5);
 
         // vrcholy pro druhý trojúhelník
         Point3D t2a = new Point3D(canvas.getWidth() - 1, ((double) canvas.getHeight() / 2) - 1, 0.8);

@@ -28,6 +28,4 @@ public class Canvas extends JPanel {
     public void clear() {
         raster.clear();
     }
-
-
 }

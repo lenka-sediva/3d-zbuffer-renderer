@@ -8,101 +8,60 @@ public class TriangleRasterizer {
 
     public static void rasterize(Visibility img, Point3D vA, Point3D vB, Point3D vC, Col color) {
 
-        // Souřadnice X a Y jako int pro rasterizaci, Z jako double pro přesný Z-test
-        int aX = (int) Math.round(vA.getX());
-        int aY = (int) Math.round(vA.getY());
-        double aZ = vA.getZ(); // <-- double, NEzaokrouhlujeme!
+        // vrcholy jako double
+        double ax = vA.getX();
+        double ay = vA.getY();
+        double az = vA.getZ();
 
-        int bX = (int) Math.round(vB.getX());
-        int bY = (int) Math.round(vB.getY());
-        double bZ = vB.getZ();
+        double bx = vB.getX();
+        double by = vB.getY();
+        double bz = vB.getZ();
 
-        int cX = (int) Math.round(vC.getX());
-        int cY = (int) Math.round(vC.getY());
-        double cZ = vC.getZ();
+        double cx = vC.getX();
+        double cy = vC.getY();
+        double cz = vC.getZ();
 
-        // ===== 1) Seřazení vrcholů podle Y (aY <= bY <= cY) =====
-        if (aY > bY) {
-            int tmpX = aX; aX = bX; bX = tmpX;
-            int tmpY = aY; aY = bY; bY = tmpY;
-            double tmpZ = aZ; aZ = bZ; bZ = tmpZ;
-        }
-        if (bY > cY) {
-            int tmpX = bX; bX = cX; cX = tmpX;
-            int tmpY = bY; bY = cY; cY = tmpY;
-            double tmpZ = bZ; bZ = cZ; cZ = tmpZ;
-        }
-        if (aY > bY) {
-            int tmpX = aX; aX = bX; bX = tmpX;
-            int tmpY = aY; aY = bY; bY = tmpY;
-            double tmpZ = aZ; aZ = bZ; bZ = tmpZ;
-        }
+        // Bounding box trojúhelníku
+        int minX = (int) Math.floor(Math.min(ax, Math.min(bx, cx)));
+        int maxX = (int) Math.ceil (Math.max(ax, Math.max(bx, cx)));
 
-        // Jmenovatel pro barycentrické souřadnice – platný pro celý trojúhelník
-        double denom = (double)((bY - cY) * (aX - cX) + (cX - bX) * (aY - cY));
+        int minY = (int) Math.floor(Math.min(ay, Math.min(by, cy)));
+        int maxY = (int) Math.ceil (Math.max(ay, Math.max(by, cy)));
 
-        // Degenerovaný trojúhelník (všechny vrcholy na jedné přímce)
-        if (denom == 0) return;
+        // Omezíme na velikost bufferu
+        minX = Math.max(minX, 0);
+        minY = Math.max(minY, 0);
+        maxX = Math.min(maxX, img.getWidth()  - 1);
+        maxY = Math.min(maxY, img.getHeight() - 1);
 
-        // ===== 2) Horní část trojúhelníku (aY -> bY) =====
-        for (int y = aY; y <= bY; y++) {
+        // Předpočítaný jmenovatel barycentriky
+        double denom = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
 
-            if (bY - aY == 0) continue;
-            if (cY - aY == 0) continue;
+        if (denom == 0.0) return; // degenerovaný trojúhelník
 
-            double tAB = (double)(y - aY) / (bY - aY);
-            int xAB = (int)((1 - tAB) * aX + tAB * bX);
+        // Průchod bounding boxem
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
 
-            double tAC = (double)(y - aY) / (cY - aY);
-            int xAC = (int)((1 - tAC) * aX + tAC * cX);
+                // barycentrické váhy
+                double px = x + 0.5;
+                double py = y + 0.5;
 
-            int xLeft  = Math.min(xAB, xAC);
-            int xRight = Math.max(xAB, xAC);
+                double wA = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / denom;
 
-            for (int x = xLeft; x <= xRight; x++) {
-                double z = interpolateZ(x, y, aX, aY, aZ, bX, bY, bZ, cX, cY, cZ, denom);
-                img.setPixelWithZTest(x, y, z, color);
+                double wB = ((cy - ay) * (px - cx) + (ax - cx) * (py - cy)) / denom;
+
+                double wC = 1.0 - wA - wB;
+
+                // inside test
+                if ((wA >= 0 && wB >= 0 && wC >= 0) || (wA <= 0 && wB <= 0 && wC <= 0)) {
+
+                    // Interpolace Z (lineární v screen prostoru)
+                    double z = wA * az + wB * bz + wC * cz;
+
+                    img.setPixelWithZTest(x, y, z, color);
+                }
             }
         }
-
-        // ===== 3) Spodní část trojúhelníku (bY -> cY) =====
-        for (int y = bY; y <= cY; y++) {
-
-            if (cY - bY == 0) continue;
-            if (cY - aY == 0) continue;
-
-            double tBC = (double)(y - bY) / (cY - bY);
-            int xBC = (int)((1 - tBC) * bX + tBC * cX);
-
-            double tAC = (double)(y - aY) / (cY - aY);
-            int xAC = (int)((1 - tAC) * aX + tAC * cX);
-
-            int xLeft  = Math.min(xBC, xAC);
-            int xRight = Math.max(xBC, xAC);
-
-            for (int x = xLeft; x <= xRight; x++) {
-                double z = interpolateZ(x, y, aX, aY, aZ, bX, bY, bZ, cX, cY, cZ, denom);
-                img.setPixelWithZTest(x, y, z, color);
-            }
-        }
-    }
-
-    /**
-     * Vypočítá Z hodnotu pixelu (x, y) pomocí barycentrických souřadnic.
-     * Tato metoda je přesná a nevnáší chyby zaokrouhlování jako dřívější
-     * lineární interpolace přes zaokrouhlené hrany.
-     */
-    private static double interpolateZ(
-            int x, int y,
-            int aX, int aY, double aZ,
-            int bX, int bY, double bZ,
-            int cX, int cY, double cZ,
-            double denom) {
-
-        double wA = ((bY - cY) * (x - cX) + (cX - bX) * (y - cY)) / denom;
-        double wB = ((cY - aY) * (x - cX) + (aX - cX) * (y - cY)) / denom;
-        double wC = 1.0 - wA - wB;
-
-        return wA * aZ + wB * bZ + wC * cZ;
     }
 }
