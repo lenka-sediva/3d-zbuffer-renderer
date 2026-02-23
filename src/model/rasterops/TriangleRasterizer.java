@@ -6,96 +6,103 @@ import transforms.Point3D;
 
 public class TriangleRasterizer {
 
-    // Prezentace Triangle rasterizer Steflovic - SLIDE 3
-    // Prezentace Triangle rasterizer Jezek - OD SLIDE 147
     public static void rasterize(Visibility img, Point3D vA, Point3D vB, Point3D vC, Col color) {
 
-        // převod na double (nezaokrouhlovat hned)
-        double aX = vA.getX();
-        double aY = vA.getY();
-        double aZ = vA.getZ();
+        // Souřadnice X a Y jako int pro rasterizaci, Z jako double pro přesný Z-test
+        int aX = (int) Math.round(vA.getX());
+        int aY = (int) Math.round(vA.getY());
+        double aZ = vA.getZ(); // <-- double, NEzaokrouhlujeme!
 
-        double bX = vB.getX();
-        double bY = vB.getY();
+        int bX = (int) Math.round(vB.getX());
+        int bY = (int) Math.round(vB.getY());
         double bZ = vB.getZ();
 
-        double cX = vC.getX();
-        double cY = vC.getY();
+        int cX = (int) Math.round(vC.getX());
+        int cY = (int) Math.round(vC.getY());
         double cZ = vC.getZ();
 
-        // seřazení podle y
+        // ===== 1) Seřazení vrcholů podle Y (aY <= bY <= cY) =====
         if (aY > bY) {
-            double tmpX = aX, tmpY = aY, tmpZ = aZ;
-            aX = bX; aY = bY; aZ = bZ;
-            bX = tmpX; bY = tmpY; bZ = tmpZ;
+            int tmpX = aX; aX = bX; bX = tmpX;
+            int tmpY = aY; aY = bY; bY = tmpY;
+            double tmpZ = aZ; aZ = bZ; bZ = tmpZ;
         }
-
-        if (aY > cY) {
-            double tmpX = aX, tmpY = aY, tmpZ = aZ;
-            aX = cX; aY = cY; aZ = cZ;
-            cX = tmpX; cY = tmpY; cZ = tmpZ;
-        }
-
         if (bY > cY) {
-            double tmpX = bX, tmpY = bY, tmpZ = bZ;
-            bX = cX; bY = cY; bZ = cZ;
-            cX = tmpX; cY = tmpY; cZ = tmpZ;
+            int tmpX = bX; bX = cX; cX = tmpX;
+            int tmpY = bY; bY = cY; cY = tmpY;
+            double tmpZ = bZ; bZ = cZ; cZ = tmpZ;
+        }
+        if (aY > bY) {
+            int tmpX = aX; aX = bX; bX = tmpX;
+            int tmpY = aY; aY = bY; bY = tmpY;
+            double tmpZ = aZ; aZ = bZ; bZ = tmpZ;
         }
 
-        int yStart = (int) Math.ceil(aY);
-        int yEnd = (int) Math.ceil(cY);
+        // Jmenovatel pro barycentrické souřadnice – platný pro celý trojúhelník
+        double denom = (double)((bY - cY) * (aX - cX) + (cX - bX) * (aY - cY));
 
-        // horní část trojúhelníka (A -> B)
-        for (int y = yStart; y <= (int)Math.ceil(bY); y++) {
+        // Degenerovaný trojúhelník (všechny vrcholy na jedné přímce)
+        if (denom == 0) return;
 
-            if (bY == aY) break; // ochrana proti dělení nulou
+        // ===== 2) Horní část trojúhelníku (aY -> bY) =====
+        for (int y = aY; y <= bY; y++) {
 
-            double t1 = (y - aY) / (bY - aY);
-            double t2 = (y - aY) / (cY - aY);
+            if (bY - aY == 0) continue;
+            if (cY - aY == 0) continue;
 
-            double x1 = aX + t1 * (bX - aX);
-            double z1 = aZ + t1 * (bZ - aZ);
+            double tAB = (double)(y - aY) / (bY - aY);
+            int xAB = (int)((1 - tAB) * aX + tAB * bX);
 
-            double x2 = aX + t2 * (cX - aX);
-            double z2 = aZ + t2 * (cZ - aZ);
+            double tAC = (double)(y - aY) / (cY - aY);
+            int xAC = (int)((1 - tAC) * aX + tAC * cX);
 
-            drawScanline(img, y, x1, z1, x2, z2, color);
+            int xLeft  = Math.min(xAB, xAC);
+            int xRight = Math.max(xAB, xAC);
+
+            for (int x = xLeft; x <= xRight; x++) {
+                double z = interpolateZ(x, y, aX, aY, aZ, bX, bY, bZ, cX, cY, cZ, denom);
+                img.setPixelWithZTest(x, y, z, color);
+            }
         }
 
-        // dolní část trojúhelníka (B → C)
-        for (int y = (int)Math.ceil(bY); y <= yEnd; y++) {
+        // ===== 3) Spodní část trojúhelníku (bY -> cY) =====
+        for (int y = bY; y <= cY; y++) {
 
-            if (cY == bY) break;
+            if (cY - bY == 0) continue;
+            if (cY - aY == 0) continue;
 
-            double t1 = (y - bY) / (cY - bY);
-            double t2 = (y - aY) / (cY - aY);
+            double tBC = (double)(y - bY) / (cY - bY);
+            int xBC = (int)((1 - tBC) * bX + tBC * cX);
 
-            double x1 = bX + t1 * (cX - bX);
-            double z1 = bZ + t1 * (cZ - bZ);
+            double tAC = (double)(y - aY) / (cY - aY);
+            int xAC = (int)((1 - tAC) * aX + tAC * cX);
 
-            double x2 = aX + t2 * (cX - aX);
-            double z2 = aZ + t2 * (cZ - aZ);
+            int xLeft  = Math.min(xBC, xAC);
+            int xRight = Math.max(xBC, xAC);
 
-            drawScanline(img, y, x1, z1, x2, z2, color);
+            for (int x = xLeft; x <= xRight; x++) {
+                double z = interpolateZ(x, y, aX, aY, aZ, bX, bY, bZ, cX, cY, cZ, denom);
+                img.setPixelWithZTest(x, y, z, color);
+            }
         }
     }
 
-    private static void drawScanline(Visibility img, int y, double x1, double z1, double x2, double z2, Col color) {
+    /**
+     * Vypočítá Z hodnotu pixelu (x, y) pomocí barycentrických souřadnic.
+     * Tato metoda je přesná a nevnáší chyby zaokrouhlování jako dřívější
+     * lineární interpolace přes zaokrouhlené hrany.
+     */
+    private static double interpolateZ(
+            int x, int y,
+            int aX, int aY, double aZ,
+            int bX, int bY, double bZ,
+            int cX, int cY, double cZ,
+            double denom) {
 
-        if (x1 > x2) {
-            double tmpX = x1; x1 = x2; x2 = tmpX;
-            double tmpZ = z1; z1 = z2; z2 = tmpZ;
-        }
+        double wA = ((bY - cY) * (x - cX) + (cX - bX) * (y - cY)) / denom;
+        double wB = ((cY - aY) * (x - cX) + (aX - cX) * (y - cY)) / denom;
+        double wC = 1.0 - wA - wB;
 
-        int xStart = (int) Math.ceil(x1);
-        int xEnd = (int) Math.ceil(x2);
-
-        for (int x = xStart; x <= xEnd; x++) {
-
-            double t = (x2 == x1) ? 0 : (x - x1) / (x2 - x1);
-            double z = z1 + t * (z2 - z1);
-
-            img.setPixelWithZTest(x, y, z, color);
-        }
+        return wA * aZ + wB * bZ + wC * cZ;
     }
 }
