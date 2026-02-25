@@ -1,5 +1,26 @@
 # Repository for ut13-c04
 
+### TODO 3
+
+### Progress checklist
+
+- [ ] Create data structures: - `Vertex`, `Part`, `TopologyType` enum (min. 3 types), `Solid` abstract class
+- [ ] Create an Arrow object
+- [ ] Renderer implementation - Support rendering of all 3 topologies
+- [ ] Viewport transformation in both rasterizers
+- [ ] Arrow displays correctly with all parts visible
+- [ ] (Additional) Vertex linear interpolation
+
+Your task is to draw an Arrow object composed of three distinct parts. Each part must use a different topology type (`TRIANGLES`, `LINES`, `TRIANGLE_STRIP`).
+
+**Vertex coordinates** must be defined in NDC (Normalized Device Coordinates), not in screen space. The _viewport transformation_ to screen space should be handled by the rasterizer.
+
+Implement a _Renderer_ that correctly processes each topology, (additionally) interpolating vertex attributes and drawing the geometry to the screen. The Arrow should be visible with all three parts rendered correctly according to their respective topology rules.
+
+### Expected result
+
+![topologyTest](img/topology-test.png)
+
 ### TODO 2
 
 ### Progress checklist
