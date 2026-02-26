@@ -1,12 +1,15 @@
 package model.rasterops;
 
 import model.objectdata.Line;
+import model.objectdata.Vertex;
 import model.rasterdata.ColorBuffer;
+import model.rasterdata.Raster;
+
 import java.awt.*;
 
 public abstract class LineRasterizer {
 
-    ColorBuffer raster;
+    Raster raster;
     Color color;
 
     public LineRasterizer(ColorBuffer raster){
@@ -27,6 +30,10 @@ public abstract class LineRasterizer {
 
     }
 
+    protected void drawLine(Vertex v1, Vertex v2) {
+
+    }
+
     public void setColor(Color color) {
         this.color = color;
     }
@@ -37,5 +44,11 @@ public abstract class LineRasterizer {
 
     public void setRaster(ColorBuffer raster) {
         this.raster = raster;
+    }
+
+    // TODO
+    public void rasterize(Vertex v1, Vertex v2) {
+        setColor(color);
+        drawLine(v1, v2);
     }
 }

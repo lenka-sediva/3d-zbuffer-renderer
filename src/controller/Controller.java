@@ -1,9 +1,14 @@
 package controller;
 
 import app.ZBufferTest;
+import model.objectdata.Solid;
+import model.objects.Arrow;
 import model.rasterdata.ColorBuffer;
 import model.rasterdata.Visibility;
+import model.rasterops.LineRasterizer;
+import model.rasterops.LineRasterizerBresenham;
 import model.rasterops.TriangleRasterizer;
+import model.renderer.Renderer3D;
 import transforms.Col;
 import transforms.Point3D;
 import view.Canvas;
@@ -13,10 +18,16 @@ import java.awt.*;
 public class Controller {
     private final Canvas canvas;
     private Visibility vB;
+    private TriangleRasterizer triangleRasterizer;
+    private LineRasterizer lineRasterizer;
 
     public Controller(Canvas canvas) {
         this.canvas = canvas;
         this.vB = new Visibility(canvas.getRaster());
+
+        this.triangleRasterizer = new TriangleRasterizer(vB);
+        // this.lineRasterizer = new LineRasterizerBresenham(vB); // nejde
+        this.lineRasterizer = new LineRasterizerBresenham(canvas.getRaster());
 
         initListeners(canvas);
         redraw();
@@ -38,9 +49,16 @@ public class Controller {
         Point3D t2c = new Point3D(0., 0., 0.1);
 
         // rasterizuj první trojúhelník s funkčním z-testem - červený
-        TriangleRasterizer.rasterize(vB, t1a, t1b, t1c, new Col(1., 0, 0));
+        //TriangleRasterizer.rasterize(vB, t1a, t1b, t1c, new Col(1., 0, 0));
         // rasterizuj druhý trojúhelník s funkčním z-testem - žlutý
-        TriangleRasterizer.rasterize(vB, t2a, t2b, t2c, new Col(1., 1., 0));
+        //TriangleRasterizer.rasterize(vB, t2a, t2b, t2c, new Col(1., 1., 0));
+
+        // šipka
+        Renderer3D renderer = new Renderer3D();
+        renderer.setTriangleRasterizer(triangleRasterizer, lineRasterizer);
+
+        Solid arrow = new Arrow();
+        renderer.renderSolid(arrow);
     }
 
     private void initListeners(Canvas canvas) {
