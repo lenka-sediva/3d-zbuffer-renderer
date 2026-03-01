@@ -44,9 +44,9 @@ public abstract class LineRasterizer {
 
         // vezme barvu z prvního vertexu
         setColor(new Col(
-                (int) v1.getColor().getR(),
-                (int) v1.getColor().getG(),
-                (int) v1.getColor().getB()
+                (int) (v1.getColor().getR() * 255),
+                (int) (v1.getColor().getG() * 255),
+                (int) (v1.getColor().getB() * 255)
         ));
 
         drawLine(x1, y1, x2, y2);

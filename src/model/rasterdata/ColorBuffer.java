@@ -8,7 +8,7 @@ import java.awt.image.BufferedImage;
 public class ColorBuffer implements Raster<Col> {
 
     private final BufferedImage img;
-    private final Col backgroundColor = new Col(0x6A6A8D);
+    private final Col backgroundColor = new Col(0x16161d);
 
     public ColorBuffer(int width, int height) {
         img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
