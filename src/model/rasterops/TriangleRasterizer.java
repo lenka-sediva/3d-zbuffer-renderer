@@ -75,104 +75,54 @@ public class TriangleRasterizer {
     }
 
     // nový
-    public void rasterize(Vertex vA, Vertex vB, Vertex vC) {
 
-        // viewport transformation
+    public void rasterize(Vertex vA, Vertex vB, Vertex vC) {
+        // viewport transformace
         Vec2D a = viewportTransformation(vA);
         Vec2D b = viewportTransformation(vB);
         Vec2D c = viewportTransformation(vC);
 
-        // vrcholy
-        int aX = (int) Math.round(a.getX());
-        int aY = (int) Math.round(a.getY());
-        double aZ = vA.getPosition().getZ();
+        // screen souřadnice + Z
+        double ax = a.getX(), ay = a.getY(), az = vA.getPosition().getZ();
+        double bx = b.getX(), by = b.getY(), bz = vB.getPosition().getZ();
+        double cx = c.getX(), cy = c.getY(), cz = vC.getPosition().getZ();
 
-        int bX = (int) Math.round(b.getX());
-        int bY = (int) Math.round(b.getY());
-        double bZ = vB.getPosition().getZ();
+        // bounding box
+        int minX = (int)Math.floor(Math.min(ax, Math.min(bx, cx)));
+        int maxX = (int)Math.ceil (Math.max(ax, Math.max(bx, cx)));
+        int minY = (int)Math.floor(Math.min(ay, Math.min(by, cy)));
+        int maxY = (int)Math.ceil (Math.max(ay, Math.max(by, cy)));
 
-        int cX = (int) Math.round(c.getX());
-        int cY = (int) Math.round(c.getY());
-        double cZ = vC.getPosition().getZ();
+        minX = Math.max(minX, 0);
+        minY = Math.max(minY, 0);
+        maxX = Math.min(maxX, img.getWidth() - 1);
+        maxY = Math.min(maxY, img.getHeight() - 1);
 
-        // Seřazení vrcholů podle Y
-        if (aY > bY) {
-            int tmpX = aX; aX = bX; bX = tmpX;
-            int tmpY = aY; aY = bY; bY = tmpY;
-            double tmpZ = aZ; aZ = bZ; bZ = tmpZ;
-        }
+        // předpočítaný jmenovatel pro barycentriku
+        double denom = (by - cy)*(ax - cx) + (cx - bx)*(ay - cy);
+        if (denom == 0.0) return; // degenerovaný trojúhelník
 
-        if (bY > cY) {
-            int tmpX = bX; bX = cX; cX = tmpX;
-            int tmpY = bY; bY = cY; cY = tmpY;
-            double tmpZ = bZ; bZ = cZ; cZ = tmpZ;
-        }
+        // průchod bounding boxem
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
+                double px = x + 0.5;
+                double py = y + 0.5;
 
-        if (aY > bY) {
-            int tmpX = aX; aX = bX; bX = tmpX;
-            int tmpY = aY; aY = bY; bY = tmpY;
-            double tmpZ = aZ; aZ = bZ; bZ = tmpZ;
-        }
+                // barycentrické váhy
+                double wA = ((by - cy)*(px - cx) + (cx - bx)*(py - cy)) / denom;
+                double wB = ((cy - ay)*(px - cx) + (ax - cx)*(py - cy)) / denom;
+                double wC = 1.0 - wA - wB;
 
-        // Horní část trojúhelníku
-        for (int y = aY; y <= bY; y++) {
+                // inside test
+                if ((wA >= 0 && wB >= 0 && wC >= 0) || (wA <= 0 && wB <= 0 && wC <= 0)) {
 
-            if (bY - aY == 0) continue;
-            if (cY - aY == 0) continue;
+                    // interpolace Z
+                    double z = wA * az + wB * bz + wC * cz;
 
-            double tAB = (double) (y - aY) / (bY - aY);
-            double tAC = (double) (y - aY) / (cY - aY);
-
-            int xAB = (int) ((1 - tAB) * aX + tAB * bX);
-            double zAB = (1 - tAB) * aZ + tAB * bZ;
-
-            int xAC = (int) ((1 - tAC) * aX + tAC * cX);
-            double zAC = (1 - tAC) * aZ + tAC * cZ;
-
-            if (xAB > xAC) {
-                int tmpX = xAB; xAB = xAC; xAC = tmpX;
-                double tmpZ = zAB; zAB = zAC; zAC = tmpZ;
-            }
-
-            for (int x = xAB; x <= xAC; x++) {
-
-                double t = (xAC - xAB) == 0 ? 0 :
-                        (double) (x - xAB) / (xAC - xAB);
-
-                double z = (1 - t) * zAB + t * zAC;
-
-                img.setPixelWithZTest(x, y, z, vA.getColor());
-            }
-        }
-
-        // Spodní část trojúhelníku
-        for (int y = bY; y <= cY; y++) {
-
-            if (cY - bY == 0) continue;
-            if (cY - aY == 0) continue;
-
-            double tBC = (double) (y - bY) / (cY - bY);
-            double tAC = (double) (y - aY) / (cY - aY);
-
-            int xBC = (int) ((1 - tBC) * bX + tBC * cX);
-            double zBC = (1 - tBC) * bZ + tBC * cZ;
-
-            int xAC = (int) ((1 - tAC) * aX + tAC * cX);
-            double zAC = (1 - tAC) * aZ + tAC * cZ;
-
-            if (xBC > xAC) {
-                int tmpX = xBC; xBC = xAC; xAC = tmpX;
-                double tmpZ = zBC; zBC = zAC; zAC = tmpZ;
-            }
-
-            for (int x = xBC; x <= xAC; x++) {
-
-                double t = (xAC - xBC) == 0 ? 0 :
-                        (double) (x - xBC) / (xAC - xBC);
-
-                double z = (1 - t) * zBC + t * zAC;
-
-                img.setPixelWithZTest(x, y, z, vA.getColor());
+                    // interpolace barvy
+                    Col color = interpolateColor(vA, vB, vC, wA, wB, wC);
+                    img.setPixelWithZTest(x, y, z, color);
+                }
             }
         }
     }
@@ -188,5 +138,13 @@ public class TriangleRasterizer {
         double yScreen = (1.0 - yNdc) * 0.5 * height;
 
         return new Vec2D(xScreen, yScreen);
+    }
+
+    private Col interpolateColor(Vertex vA, Vertex vB, Vertex vC, double wA, double wB, double wC) {
+        double r = wA * vA.getColor().getR() + wB * vB.getColor().getR() + wC * vC.getColor().getR();
+        double g = wA * vA.getColor().getG() + wB * vB.getColor().getG() + wC * vC.getColor().getG();
+        double b = wA * vA.getColor().getB() + wB * vB.getColor().getB() + wC * vC.getColor().getB();
+
+        return new Col(r, g, b);
     }
 }

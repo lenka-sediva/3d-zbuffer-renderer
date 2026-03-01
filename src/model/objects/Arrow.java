@@ -11,82 +11,74 @@ public class Arrow extends Solid {
 
     public Arrow() {
 
-        // VERTEX BUFFER
+        double z = 0.5;
 
-        // --- TĚLO (obdélník jako TRIANGLE_STRIP) ---
-        vertexBuffer.add(new Vertex(new Point3D(-0.8,  0.1, 0.5), new Col(0,0,1))); // 0
-        vertexBuffer.add(new Vertex(new Point3D(-0.2,  0.1, 0.5), new Col(0,0,1))); // 1
-        vertexBuffer.add(new Vertex(new Point3D(-0.8, -0.1, 0.5), new Col(1,0,1))); // 2
-        vertexBuffer.add(new Vertex(new Point3D(-0.2, -0.1, 0.5), new Col(1,0,1))); // 3
+        // vertex buffer
+        // střed (sdílené vertexy)
+        vertexBuffer.add(new Vertex(new Point3D(-0.2,  0., z), new Col(255,255,255))); // 0
+        vertexBuffer.add(new Vertex(new Point3D(-0.2, -0., z), new Col(255,255,255))); // 1
 
-        // --- HLAVIČKA (1 trojúhelník) ---
-        vertexBuffer.add(new Vertex(new Point3D( 0.2,  0.25, 0.5), new Col(0,1,0))); // 4
-        vertexBuffer.add(new Vertex(new Point3D( 0.2, -0.25, 0.5), new Col(0,1,0))); // 5
-        vertexBuffer.add(new Vertex(new Point3D( 0.6,  0.0,  0.5), new Col(0,1,0))); // 6
+        // horní ocas (6 trojúhelníků = 8 vertexů, strip)
+        vertexBuffer.add(new Vertex(new Point3D(-0.75,  0., z), new Col(0,0,255)));   // 2
+        vertexBuffer.add(new Vertex(new Point3D(-0.8, 0.2, z), new Col(0,0,255)));  // 3
+        vertexBuffer.add(new Vertex(new Point3D(-0.7,  0., z), new Col(0,0,255)));  // 4
+        vertexBuffer.add(new Vertex(new Point3D(-0.65, 0.2, z), new Col(0,0,255)));  // 5
+        vertexBuffer.add(new Vertex(new Point3D(-0.6,  0., z), new Col(100,100,255))); // 6
+        vertexBuffer.add(new Vertex(new Point3D(-0.55, 0.2, z), new Col(150,150,255))); // 7
+        vertexBuffer.add(new Vertex(new Point3D(-0.5,  0., z), new Col(200,200,255))); // 8
 
-        // --- STŘEDNÍ OSA (úsečka) ---
-        vertexBuffer.add(new Vertex(new Point3D(-0.2, 0.0, 0.5), new Col(1,1,1))); // 7
-        vertexBuffer.add(new Vertex(new Point3D( 0.2, 0.0, 0.5), new Col(1,1,1))); // 8
+        // dolní ocas
+        vertexBuffer.add(new Vertex(new Point3D(-0.75, -0., z), new Col(255,0,255)));  // 9
+        vertexBuffer.add(new Vertex(new Point3D(-0.8,-0.2, z), new Col(255,0,255)));  //10
+        vertexBuffer.add(new Vertex(new Point3D(-0.7, -0., z), new Col(255,0,255)));  //11
+        vertexBuffer.add(new Vertex(new Point3D(-0.65,-0.2, z), new Col(255,0,255)));  //12
+        vertexBuffer.add(new Vertex(new Point3D(-0.6, -0., z), new Col(255,100,255))); //13
+        vertexBuffer.add(new Vertex(new Point3D(-0.55,-0.2, z), new Col(255,150,255))); //14
+        vertexBuffer.add(new Vertex(new Point3D(-0.5, -0., z), new Col(255,200,255))); //15
 
-        // --- HORNÍ OCAS (6 trojúhelníků → 8 vrcholů pro strip) ---
-        vertexBuffer.add(new Vertex(new Point3D(-0.6, 0.1, 0.5), new Col(1,0,0))); // 9
-        vertexBuffer.add(new Vertex(new Point3D(-0.55,0.2, 0.5), new Col(1,0,0))); //10
-        vertexBuffer.add(new Vertex(new Point3D(-0.5, 0.1, 0.5), new Col(1,0.5,0))); //11
-        vertexBuffer.add(new Vertex(new Point3D(-0.45,0.2, 0.5), new Col(1,0.5,0))); //12
-        vertexBuffer.add(new Vertex(new Point3D(-0.4, 0.1, 0.5), new Col(1,1,0))); //13
-        vertexBuffer.add(new Vertex(new Point3D(-0.35,0.2, 0.5), new Col(1,1,0))); //14
-        vertexBuffer.add(new Vertex(new Point3D(-0.3, 0.1, 0.5), new Col(1,1,0))); //15
-        vertexBuffer.add(new Vertex(new Point3D(-0.25,0.2, 0.5), new Col(1,1,0))); //16
+        // hlavička
+        vertexBuffer.add(new Vertex(new Point3D(0.2,  0.2, z), new Col(0,255,0))); //16
+        vertexBuffer.add(new Vertex(new Point3D(0.2, -0.2, z), new Col(0,255,0))); //17
+        vertexBuffer.add(new Vertex(new Point3D(0.5,  0.0,  z), new Col(0,255,0))); //18
 
-        // --- DOLNÍ OCAS (6 trojúhelníků → 8 vrcholů) ---
-        vertexBuffer.add(new Vertex(new Point3D(-0.6, -0.1, 0.5), new Col(0,0,1))); //17
-        vertexBuffer.add(new Vertex(new Point3D(-0.55,-0.2, 0.5), new Col(0,0,1))); //18
-        vertexBuffer.add(new Vertex(new Point3D(-0.5, -0.1, 0.5), new Col(0,0.5,1))); //19
-        vertexBuffer.add(new Vertex(new Point3D(-0.45,-0.2, 0.5), new Col(0,0.5,1))); //20
-        vertexBuffer.add(new Vertex(new Point3D(-0.4, -0.1, 0.5), new Col(0,1,1))); //21
-        vertexBuffer.add(new Vertex(new Point3D(-0.35,-0.2, 0.5), new Col(0,1,1))); //22
-        vertexBuffer.add(new Vertex(new Point3D(-0.3, -0.1, 0.5), new Col(0,1,1))); //23
-        vertexBuffer.add(new Vertex(new Point3D(-0.25,-0.2, 0.5), new Col(0,1,1))); //24
-
-        // INDEX BUFFER
-
+        // index buffer
         int start;
 
-        // --- TĚLO ---
+        // horní ocas
         start = indexBuffer.size();
-        indexBuffer.add(0);
-        indexBuffer.add(1);
         indexBuffer.add(2);
         indexBuffer.add(3);
-        partBuffer.add(new Part(start, 4, TopologyType.TRIANGLE_STRIP));
-
-        // --- HLAVIČKA ---
-        start = indexBuffer.size();
         indexBuffer.add(4);
         indexBuffer.add(5);
         indexBuffer.add(6);
-        partBuffer.add(new Part(start, 3, TopologyType.TRIANGLE_LIST));
-
-        // --- OSA ---
-        start = indexBuffer.size();
         indexBuffer.add(7);
         indexBuffer.add(8);
+        indexBuffer.add(0); // napojení na bílý střed
+        partBuffer.add(new Part(start, 8, TopologyType.TRIANGLE_STRIP));
+
+        // dolní ocas
+        start = indexBuffer.size();
+        indexBuffer.add(9);
+        indexBuffer.add(10);
+        indexBuffer.add(11);
+        indexBuffer.add(12);
+        indexBuffer.add(13);
+        indexBuffer.add(14);
+        indexBuffer.add(15);
+        indexBuffer.add(1); // napojení na bílý střed
+        partBuffer.add(new Part(start, 8, TopologyType.TRIANGLE_STRIP));
+
+        // hlavička
+        start = indexBuffer.size();
+        indexBuffer.add(16);
+        indexBuffer.add(17);
+        indexBuffer.add(18);
+        partBuffer.add(new Part(start, 3, TopologyType.TRIANGLE_LIST));
+
+        // tělo (úsečka)
+        start = indexBuffer.size();
+        indexBuffer.add(0);
+        indexBuffer.add(18);
         partBuffer.add(new Part(start, 2, TopologyType.LINE_LIST));
-
-        // --- HORNÍ OCAS ---
-        start = indexBuffer.size();
-        for(int i = 9; i <= 16; i++) {
-            indexBuffer.add(i);
-        }
-        partBuffer.add(new Part(start, 8, TopologyType.TRIANGLE_STRIP)); // ORANŽOVÝ
-
-        // --- DOLNÍ OCAS ---
-        start = indexBuffer.size();
-        for(int i = 17; i <= 24; i++) {
-            indexBuffer.add(i);
-        }
-        partBuffer.add(new Part(start, 8, TopologyType.TRIANGLE_STRIP)); // MODRÝ
-
-        System.out.println("Arrow OK, vertex count: " + vertexBuffer.size());
     }
 }

@@ -1,7 +1,6 @@
 package model.rasterops;
 
 import model.rasterdata.ColorBuffer;
-import model.rasterdata.Raster;
 
 /**
  * Bresenhamův algoritmus
@@ -41,7 +40,7 @@ public class LineRasterizerBresenham extends LineRasterizer {
 
         while (true) {
             // vykreslí kruh kolem aktuálního bodu, aby byla čára silná
-            raster.setPixel(x1, y1, color.getRGB());
+            raster.setPixel(x1, y1, color);
 
             if (x1 == x2 && y1 == y2) break; // konec při dosažení koncového bodu
 
