@@ -6,7 +6,7 @@ import transforms.Vec2D;
 import transforms.Vec3D;
 
 public class Vertex implements Vectorizable<Vertex>{
-    private final Point3D position;
+    private Point3D position;
     private final Col col;
     private Vec2D texUV;
     private Vec3D normal;
@@ -46,6 +46,11 @@ public class Vertex implements Vectorizable<Vertex>{
 
     public Col getColor() {
         return col;
+    }
+
+    // pro možnost změny pozice vrcholu
+    public void setPosition(Point3D position) {
+        this.position = position;
     }
 
     @Override

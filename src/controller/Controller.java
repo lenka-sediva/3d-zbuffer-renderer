@@ -2,6 +2,7 @@ package controller;
 
 import app.ZBufferTest;
 import model.objectdata.Solid;
+import model.objectdata.Vertex;
 import model.objects.Arrow;
 import model.rasterdata.ColorBuffer;
 import model.rasterdata.Visibility;
@@ -17,13 +18,15 @@ import java.awt.*;
 
 public class Controller {
     private final Canvas canvas;
-    private Visibility vB;
-    private TriangleRasterizer triangleRasterizer;
-    private LineRasterizer lineRasterizer;
+    private final Visibility vB;
+    private final TriangleRasterizer triangleRasterizer;
+    private final LineRasterizer lineRasterizer;
+    private final Solid arrow;
 
     public Controller(Canvas canvas) {
         this.canvas = canvas;
         this.vB = new Visibility(canvas.getRaster());
+        this.arrow = new Arrow();
 
         this.triangleRasterizer = new TriangleRasterizer(vB);
         // this.lineRasterizer = new LineRasterizerBresenham(vB); // nejde
@@ -57,12 +60,47 @@ public class Controller {
         Renderer3D renderer = new Renderer3D();
         renderer.setTriangleRasterizer(triangleRasterizer, lineRasterizer);
 
-        Solid arrow = new Arrow();
         renderer.renderSolid(arrow);
     }
 
     private void initListeners(Canvas canvas) {
-        // TODO
+        canvas.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                double x = (2.0 * e.getX() / canvas.getWidth()) - 1.0;
+                double y = 1.0 - (2.0 * e.getY() / canvas.getHeight());
+                moveCenterVertex(x, y);
+                redraw();
+            }
+        });
+
+        canvas.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(java.awt.event.MouseEvent e) {
+                double x = (2.0 * e.getX() / canvas.getWidth()) - 1.0;
+                double y = 1.0 - (2.0 * e.getY() / canvas.getHeight());
+                moveCenterVertex(x, y);
+                redraw();
+            }
+        });
+    }
+
+    private void moveCenterVertex(double x, double y) {
+        Vertex center = arrow.getVertexBuffer().get(0); // sdílený bílý posuvný vrchol ve středu šipky
+        Vertex head = arrow.getVertexBuffer().get(18);  // pomocný bod u hlavičky
+
+        // omezení x mezi start a hlavičku (vertex 18)
+        double minX = -0.1; // start středu
+        double maxX = head.getPosition().getX();
+
+        if (x < minX) x = minX;
+        if (x > maxX) x = maxX;
+
+        // fixní y = y hlavičky
+        double fixedY = head.getPosition().getY();
+
+        Point3D newPosition = new Point3D(x, fixedY, center.getPosition().getZ());
+        center.setPosition(newPosition);
     }
 
     private void redraw() {
