@@ -49,26 +49,31 @@ public class TriangleRasterizer {
             double tz = az; az = bz; bz = tz;
         }
 
-        int yStart = (int) Math.ceil(ay);
-        int yMiddle = (int) Math.ceil(by);
-        int yEnd = (int) Math.ceil(cy);
+        // výpočet rozsahu Y
+        int yStart = (int) Math.ceil(ay); // horní vrchol
+        int yMiddle = (int) Math.ceil(by); // střední
+        int yEnd = (int) Math.ceil(cy); // spodní vrchol
 
         // horní část
         for (int y = yStart; y < yMiddle; y++) {
+            // lineární interpolace podél hran trojúhelníku
             double tAB = (by - ay) != 0 ? (y - ay) / (by - ay) : 0;
             double tAC = (cy - ay) != 0 ? (y - ay) / (cy - ay) : 0;
 
+            // výpočet pozic X a Z bodů na hranách pro aktuální Y
             double xAB = ax + tAB * (bx - ax);
             double zAB = az + tAB * (bz - az);
 
             double xAC = ax + tAC * (cx - ax);
             double zAC = az + tAC * (cz - az);
 
+            // xAB = levá hrana, xAC = pravá hrana
             if (xAB > xAC) {
                 double tx = xAB; xAB = xAC; xAC = tx;
                 double tz = zAB; zAB = zAC; zAC = tz;
             }
 
+            // pro každý pixel na řádku interpoluje Z a kreslí pixel s testem hloubky
             for (int x = (int) Math.ceil(xAB); x <= (int) Math.floor(xAC); x++) {
                 if (Math.abs(xAC - xAB) < 1e-6) {
                     img.setPixelWithZTest(x, y, zAB, color);
@@ -84,6 +89,7 @@ public class TriangleRasterizer {
 
         // dolní část
         for (int y = yMiddle; y <= yEnd; y++) {
+            // interpolace po hranách BC a AC
             double tBC = (cy - by) != 0 ? (y - by) / (cy - by) : 0;
             double tAC = (cy - ay) != 0 ? (y - ay) / (cy - ay) : 0;
 
@@ -157,12 +163,13 @@ public class TriangleRasterizer {
 
         // horní část
         for (int y = yStart; y < yMiddle; y++) {
+            // váhové koeficienty pro lineární interpolaci = jak daleko se nacházíme mezi 2 body
             double tAB = (by - ay) != 0 ? (y - ay) / (by - ay) : 0;
             double tAC = (cy - ay) != 0 ? (y - ay) / (cy - ay) : 0;
 
             double xAB = ax + tAB * (bx - ax);
             double zAB = az + tAB * (bz - az);
-            Col colAB = colA.mul(1 - tAB).add(colB.mul(tAB));
+            Col colAB = colA.mul(1 - tAB).add(colB.mul(tAB)); // interpolovaná barva po vertikálních hranách
 
             double xAC = ax + tAC * (cx - ax);
             double zAC = az + tAC * (cz - az);
@@ -214,6 +221,7 @@ public class TriangleRasterizer {
         }
     }
 
+    // převádí NDC souřadnice (-1 až 1) do pixelů obrazovky
     private Vec2D viewportTransformation(Vertex v) {
         int width = img.getWidth();
         int height = img.getHeight();
