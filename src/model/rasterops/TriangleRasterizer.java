@@ -8,16 +8,16 @@ import transforms.Vec2D;
 
 public class TriangleRasterizer {
 
-    private Visibility img;
+    private final Visibility img;
 
     public TriangleRasterizer(Visibility img) {
         this.img = img;
     }
 
-    // pro žlutý a červený trojúheník se z
+    // Model -> Rasterizer
+    // pro žlutý a červený trojúheník se Z
+    // rasterizace s konstantní barvou ve screen prostoru
     public static void rasterize(Visibility img, Point3D vA, Point3D vB, Point3D vC, Col color) {
-
-        // vrcholy jako double
         double ax = vA.getX();
         double ay = vA.getY();
         double az = vA.getZ();
@@ -30,99 +30,186 @@ public class TriangleRasterizer {
         double cy = vC.getY();
         double cz = vC.getZ();
 
-        // Bounding box trojúhelníku
-        int minX = (int) Math.floor(Math.min(ax, Math.min(bx, cx)));
-        int maxX = (int) Math.ceil (Math.max(ax, Math.max(bx, cx)));
+        // seřazení podle Y
+        if (ay > by) {
+            double tx = ax; ax = bx; bx = tx;
+            double ty = ay; ay = by; by = ty;
+            double tz = az; az = bz; bz = tz;
+        }
 
-        int minY = (int) Math.floor(Math.min(ay, Math.min(by, cy)));
-        int maxY = (int) Math.ceil (Math.max(ay, Math.max(by, cy)));
+        if (by > cy) {
+            double tx = bx; bx = cx; cx = tx;
+            double ty = by; by = cy; cy = ty;
+            double tz = bz; bz = cz; cz = tz;
+        }
 
-        // Omezíme na velikost bufferu
-        minX = Math.max(minX, 0);
-        minY = Math.max(minY, 0);
-        maxX = Math.min(maxX, img.getWidth()  - 1);
-        maxY = Math.min(maxY, img.getHeight() - 1);
+        if (ay > by) {
+            double tx = ax; ax = bx; bx = tx;
+            double ty = ay; ay = by; by = ty;
+            double tz = az; az = bz; bz = tz;
+        }
 
-        // Předpočítaný jmenovatel barycentriky
-        double denom = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
+        int yStart = (int) Math.ceil(ay);
+        int yMiddle = (int) Math.ceil(by);
+        int yEnd = (int) Math.ceil(cy);
 
-        if (denom == 0.0) return; // degenerovaný trojúhelník
+        // horní část
+        for (int y = yStart; y < yMiddle; y++) {
+            double tAB = (by - ay) != 0 ? (y - ay) / (by - ay) : 0;
+            double tAC = (cy - ay) != 0 ? (y - ay) / (cy - ay) : 0;
 
-        // Průchod bounding boxem
-        for (int y = minY; y <= maxY; y++) {
-            for (int x = minX; x <= maxX; x++) {
+            double xAB = ax + tAB * (bx - ax);
+            double zAB = az + tAB * (bz - az);
 
-                // barycentrické váhy
-                double px = x + 0.5;
-                double py = y + 0.5;
+            double xAC = ax + tAC * (cx - ax);
+            double zAC = az + tAC * (cz - az);
 
-                double wA = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / denom;
+            if (xAB > xAC) {
+                double tx = xAB; xAB = xAC; xAC = tx;
+                double tz = zAB; zAB = zAC; zAC = tz;
+            }
 
-                double wB = ((cy - ay) * (px - cx) + (ax - cx) * (py - cy)) / denom;
-
-                double wC = 1.0 - wA - wB;
-
-                // inside test
-                if ((wA >= 0 && wB >= 0 && wC >= 0) || (wA <= 0 && wB <= 0 && wC <= 0)) {
-
-                    // Interpolace Z (lineární v screen prostoru)
-                    double z = wA * az + wB * bz + wC * cz;
-
-                    img.setPixelWithZTest(x, y, z, color);
+            for (int x = (int) Math.ceil(xAB); x <= (int) Math.floor(xAC); x++) {
+                if (Math.abs(xAC - xAB) < 1e-6) {
+                    img.setPixelWithZTest(x, y, zAB, color);
+                    continue;
                 }
+
+                double t = (x - xAB) / (xAC - xAB);
+                double z = zAB + t * (zAC - zAB);
+
+                img.setPixelWithZTest(x, y, z, color);
+            }
+        }
+
+        // dolní část
+        for (int y = yMiddle; y <= yEnd; y++) {
+            double tBC = (cy - by) != 0 ? (y - by) / (cy - by) : 0;
+            double tAC = (cy - ay) != 0 ? (y - ay) / (cy - ay) : 0;
+
+            double xBC = bx + tBC * (cx - bx);
+            double zBC = bz + tBC * (cz - bz);
+
+            double xAC = ax + tAC * (cx - ax);
+            double zAC = az + tAC * (cz - az);
+
+            if (xBC > xAC) {
+                double tx = xBC; xBC = xAC; xAC = tx;
+                double tz = zBC; zBC = zAC; zAC = tz;
+            }
+
+            for (int x = (int) Math.ceil(xBC); x <= (int) Math.floor(xAC); x++) {
+                if (Math.abs(xAC - xBC) < 1e-6) {
+                    img.setPixelWithZTest(x, y, zBC, color);
+                    continue;
+                }
+
+                double t = (x - xBC) / (xAC - xBC);
+                double z = zBC + t * (zAC - zBC);
+
+                img.setPixelWithZTest(x, y, z, color);
             }
         }
     }
 
-    // nový
-
+    // Model -> Renderer -> Rasterizer
+    // pro šipku
+    // součást 3D pipeline, provádí viewport transformaci a Gouradovu interpolaci atributů
     public void rasterize(Vertex vA, Vertex vB, Vertex vC) {
         // viewport transformace
         Vec2D a = viewportTransformation(vA);
         Vec2D b = viewportTransformation(vB);
         Vec2D c = viewportTransformation(vC);
 
-        // screen souřadnice + Z
         double ax = a.getX(), ay = a.getY(), az = vA.getPosition().getZ();
         double bx = b.getX(), by = b.getY(), bz = vB.getPosition().getZ();
         double cx = c.getX(), cy = c.getY(), cz = vC.getPosition().getZ();
 
-        // bounding box
-        int minX = (int)Math.floor(Math.min(ax, Math.min(bx, cx)));
-        int maxX = (int)Math.ceil (Math.max(ax, Math.max(bx, cx)));
-        int minY = (int)Math.floor(Math.min(ay, Math.min(by, cy)));
-        int maxY = (int)Math.ceil (Math.max(ay, Math.max(by, cy)));
+        Col colA = vA.getColor();
+        Col colB = vB.getColor();
+        Col colC = vC.getColor();
 
-        minX = Math.max(minX, 0);
-        minY = Math.max(minY, 0);
-        maxX = Math.min(maxX, img.getWidth() - 1);
-        maxY = Math.min(maxY, img.getHeight() - 1);
+        // seřazení podle Y
+        if (ay > by) {
+            double tmpX = ax; ax = bx; bx = tmpX;
+            double tmpY = ay; ay = by; by = tmpY;
+            double tmpZ = az; az = bz; bz = tmpZ;
+            Col tmpCol = colA; colA = colB; colB = tmpCol;
+        }
 
-        // předpočítaný jmenovatel pro barycentriku
-        double denom = (by - cy)*(ax - cx) + (cx - bx)*(ay - cy);
-        if (denom == 0.0) return; // degenerovaný trojúhelník
+        if (by > cy) {
+            double tmpX = bx; bx = cx; cx = tmpX;
+            double tmpY = by; by = cy; cy = tmpY;
+            double tmpZ = bz; bz = cz; cz = tmpZ;
+            Col tmpCol = colB; colB = colC; colC = tmpCol;
+        }
 
-        // průchod bounding boxem
-        for (int y = minY; y <= maxY; y++) {
-            for (int x = minX; x <= maxX; x++) {
-                double px = x + 0.5;
-                double py = y + 0.5;
+        if (ay > by) {
+            double tmpX = ax; ax = bx; bx = tmpX;
+            double tmpY = ay; ay = by; by = tmpY;
+            double tmpZ = az; az = bz; bz = tmpZ;
+            Col tmpCol = colA; colA = colB; colB = tmpCol;
+        }
 
-                // barycentrické váhy
-                double wA = ((by - cy)*(px - cx) + (cx - bx)*(py - cy)) / denom;
-                double wB = ((cy - ay)*(px - cx) + (ax - cx)*(py - cy)) / denom;
-                double wC = 1.0 - wA - wB;
+        int yStart = (int) Math.ceil(ay);
+        int yMiddle = (int) Math.ceil(by);
+        int yEnd = (int) Math.ceil(cy);
 
-                // inside test
-                if ((wA >= 0 && wB >= 0 && wC >= 0) || (wA <= 0 && wB <= 0 && wC <= 0)) {
+        // horní část
+        for (int y = yStart; y < yMiddle; y++) {
+            double tAB = (by - ay) != 0 ? (y - ay) / (by - ay) : 0;
+            double tAC = (cy - ay) != 0 ? (y - ay) / (cy - ay) : 0;
 
-                    // interpolace Z
-                    double z = wA * az + wB * bz + wC * cz;
+            double xAB = ax + tAB * (bx - ax);
+            double zAB = az + tAB * (bz - az);
+            Col colAB = colA.mul(1 - tAB).add(colB.mul(tAB));
 
-                    // interpolace barvy
-                    Col color = interpolateColor(vA, vB, vC, wA, wB, wC);
-                    img.setPixelWithZTest(x, y, z, color);
-                }
+            double xAC = ax + tAC * (cx - ax);
+            double zAC = az + tAC * (cz - az);
+            Col colAC = colA.mul(1 - tAC).add(colC.mul(tAC));
+
+            if (xAB > xAC) {
+                double tmpX = xAB; xAB = xAC; xAC = tmpX;
+                double tmpZ = zAB; zAB = zAC; zAC = tmpZ;
+                Col tmpCol = colAB; colAB = colAC; colAC = tmpCol;
+            }
+
+            for (int x = (int)Math.ceil(xAB); x <= (int)Math.floor(xAC); x++) {
+                double t = (xAC - xAB) != 0 ? (x - xAB) / (xAC - xAB) : 0;
+
+                double z = zAB + t * (zAC - zAB);
+                Col col = colAB.mul(1 - t).add(colAC.mul(t));
+
+                img.setPixelWithZTest(x, y, z, col);
+            }
+        }
+
+        // dolní část
+        for (int y = yMiddle; y <= yEnd; y++) {
+            double tBC = (cy - by) != 0 ? (y - by) / (cy - by) : 0;
+            double tAC = (cy - ay) != 0 ? (y - ay) / (cy - ay) : 0;
+
+            double xBC = bx + tBC * (cx - bx);
+            double zBC = bz + tBC * (cz - bz);
+            Col colBC = colB.mul(1 - tBC).add(colC.mul(tBC));
+
+            double xAC = ax + tAC * (cx - ax);
+            double zAC = az + tAC * (cz - az);
+            Col colAC = colA.mul(1 - tAC).add(colC.mul(tAC));
+
+            if (xBC > xAC) {
+                double tmpX = xBC; xBC = xAC; xAC = tmpX;
+                double tmpZ = zBC; zBC = zAC; zAC = tmpZ;
+                Col tmpCol = colBC; colBC = colAC; colAC = tmpCol;
+            }
+
+            for (int x = (int)Math.ceil(xBC); x <= (int)Math.floor(xAC); x++) {
+                double t = (xAC - xBC) != 0 ? (x - xBC) / (xAC - xBC) : 0;
+
+                double z = zBC + t * (zAC - zBC);
+                Col col = colBC.mul(1 - t).add(colAC.mul(t));
+
+                img.setPixelWithZTest(x, y, z, col);
             }
         }
     }
@@ -138,13 +225,5 @@ public class TriangleRasterizer {
         double yScreen = (1.0 - yNdc) * 0.5 * height;
 
         return new Vec2D(xScreen, yScreen);
-    }
-
-    private Col interpolateColor(Vertex vA, Vertex vB, Vertex vC, double wA, double wB, double wC) {
-        double r = wA * vA.getColor().getR() + wB * vB.getColor().getR() + wC * vC.getColor().getR();
-        double g = wA * vA.getColor().getG() + wB * vB.getColor().getG() + wC * vC.getColor().getG();
-        double b = wA * vA.getColor().getB() + wB * vB.getColor().getB() + wC * vC.getColor().getB();
-
-        return new Col(r, g, b);
     }
 }
