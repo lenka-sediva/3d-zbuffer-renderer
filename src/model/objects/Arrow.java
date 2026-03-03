@@ -22,18 +22,18 @@ public class Arrow extends Solid {
         vertexBuffer.add(new Vertex(new Point3D(-0.8, 0.2, z), new Col(0,0,255))); // 2
         vertexBuffer.add(new Vertex(new Point3D(-0.6,  0., z), new Col(0,0,255))); // 3
         vertexBuffer.add(new Vertex(new Point3D(-0.5, 0.2, z), new Col(0,0,255))); // 4
-        vertexBuffer.add(new Vertex(new Point3D(-0.4,  0., z), new Col(100,100,255))); // 5
-        vertexBuffer.add(new Vertex(new Point3D(-0.3, 0.2, z), new Col(150,150,255))); // 6
-        vertexBuffer.add(new Vertex(new Point3D(-0.2,  0., z), new Col(200,200,255))); // 7
+        vertexBuffer.add(new Vertex(new Point3D(-0.4,  0., z), new Col(0,0,255))); // 5
+        vertexBuffer.add(new Vertex(new Point3D(-0.3, 0.2, z), new Col(0,0,255))); // 6
+        vertexBuffer.add(new Vertex(new Point3D(-0.2,  0., z), new Col(0,150,255))); // 7
 
         // dolní ocas
         vertexBuffer.add(new Vertex(new Point3D(-0.7, -0., z), new Col(255,0,255))); // 8
         vertexBuffer.add(new Vertex(new Point3D(-0.8,-0.2, z), new Col(255,0,255))); // 9
         vertexBuffer.add(new Vertex(new Point3D(-0.6, -0., z), new Col(255,0,255))); // 10
         vertexBuffer.add(new Vertex(new Point3D(-0.5,-0.2, z), new Col(255,0,255))); // 11
-        vertexBuffer.add(new Vertex(new Point3D(-0.4, -0., z), new Col(255,100,255))); // 12
-        vertexBuffer.add(new Vertex(new Point3D(-0.3,-0.2, z), new Col(255,150,255))); // 13
-        vertexBuffer.add(new Vertex(new Point3D(-0.2, -0., z), new Col(255,200,255))); // 14
+        vertexBuffer.add(new Vertex(new Point3D(-0.4, -0., z), new Col(255,0,255))); // 12
+        vertexBuffer.add(new Vertex(new Point3D(-0.3,-0.2, z), new Col(255,0,255))); // 13
+        vertexBuffer.add(new Vertex(new Point3D(-0.2, -0., z), new Col(255,150,255))); // 14
 
         // hlavička
         vertexBuffer.add(new Vertex(new Point3D(0.3,  0.2, z), new Col(0,255,0))); // 15
