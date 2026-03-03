@@ -6,6 +6,8 @@ import transforms.Vec2D;
 import transforms.Vec3D;
 import utilities.Vectorizable;
 
+import java.util.Optional;
+
 public class Vertex implements Vectorizable<Vertex> {
     private Point3D position;
     private final Col col;
@@ -88,6 +90,22 @@ public class Vertex implements Vectorizable<Vertex> {
                 this.normal.add(other.getNormal()),
                 this.one + other.getOne()
         );
+    }
+
+    // vrací nový dehomogenizovaný Vertex (dehomogenizuje všechy atributy)
+    public Optional<Vertex> dehomog() {
+        double w = position.getW();
+
+        // ošetření dělení 0
+        if (w == 0) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new Vertex(
+                this.position.mul(1 / w),
+                this.col.mul(1 / w).saturate()
+                // TODO dehomog všechny atributy
+        ));
     }
 
     @Override

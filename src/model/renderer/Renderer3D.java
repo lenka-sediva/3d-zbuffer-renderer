@@ -5,19 +5,39 @@ import model.objectdata.Solid;
 import model.objectdata.Vertex;
 import model.rasterops.LineRasterizer;
 import model.rasterops.TriangleRasterizer;
+import utilities.Lerp;
 
+import java.io.IO;
 import java.util.List;
 
 public class Renderer3D {
 
-    TriangleRasterizer triangleRasterizer;
-    LineRasterizer lineRasterizer;
+    private TriangleRasterizer triangleRasterizer;
+    private LineRasterizer lineRasterizer;
 
-    public void setTriangleRasterizer(TriangleRasterizer triangleRasterizer, LineRasterizer lineRasterizer) {
+    public Renderer3D() {
+
+    }
+
+    public void renderSolids(List<Solid> solids) {
+        // TODO for each solid
+        // render Solid
+        if (solids == null) return;
+
+        for (Solid s : solids) {
+            renderSolid(s);
+        }
+    }
+
+    public void setTriangleRasterizer(TriangleRasterizer triangleRasterizer) {
         this.triangleRasterizer = triangleRasterizer;
+    }
+
+    public void setLineRasterizer(LineRasterizer lineRasterizer) {
         this.lineRasterizer = lineRasterizer;
     }
 
+    // TODO
     public void renderSolid(Solid solid) {
         if(solid == null) return;
 
@@ -25,54 +45,182 @@ public class Renderer3D {
         List<Integer> indices = solid.getIndexBuffer();
         List<Part> parts = solid.getPartBuffer();
 
-        for(Part part : parts) {
-            switch (part.getTopologyType()) {
-                case LINE_LIST:
-                    for (int i = 0; i < part.getCount(); i += 2) {
-                        int index1 = indices.get(part.getStartIndex() + i);
-                        int index2 = indices.get(part.getStartIndex() + i + 1);
+        if(isInView(vertices)) {
+            for (Part part : parts) {
+                switch (part.getTopologyType()) {
+                    case LINE_LIST:
+                        for (int i = 0; i < part.getCount(); i += 2) {
+                            int index1 = indices.get(part.getStartIndex() + i);
+                            int index2 = indices.get(part.getStartIndex() + i + 1);
 
-                        lineRasterizer.rasterize(
-                                vertices.get(index1),
-                                vertices.get(index2)
-                        );
-                    }
-                    break;
-
-                case TRIANGLE_LIST:
-                    for (int i = 0; i < part.getCount(); i += 3) {
-                        int index1 = indices.get(part.getStartIndex() + i);
-                        int index2 = indices.get(part.getStartIndex() + i + 1);
-                        int index3 = indices.get(part.getStartIndex() + i + 2);
-
-                        triangleRasterizer.rasterize(
-                                vertices.get(index1),
-                                vertices.get(index2),
-                                vertices.get(index3)
-                        );
-                    }
-                    break;
-
-                case TRIANGLE_STRIP:
-                    for (int i = 0; i < part.getCount() - 2; i++) {
-                        int index1 = indices.get(part.getStartIndex() + i);
-                        int index2 = indices.get(part.getStartIndex() + i + 1);
-                        int index3 = indices.get(part.getStartIndex() + i + 2);
-
-                        Vertex v1 = vertices.get(index1);
-                        Vertex v2 = vertices.get(index2);
-                        Vertex v3 = vertices.get(index3);
-
-                        if (i % 2 == 0) {
-                            Vertex temp = v2;
-                            v2 = v3;
-                            v3 = temp;
+                            lineRasterizer.rasterize(
+                                    vertices.get(index1),
+                                    vertices.get(index2)
+                            );
                         }
+                        break;
 
-                        triangleRasterizer.rasterize(v1, v2, v3);
-                    }
-                    break;
+                    case TRIANGLE_LIST:
+                        for (int i = 0; i < part.getCount(); i += 3) {
+                            int index1 = indices.get(part.getStartIndex() + i);
+                            int index2 = indices.get(part.getStartIndex() + i + 1);
+                            int index3 = indices.get(part.getStartIndex() + i + 2);
+
+                            clipZ(
+                                    vertices.get(index1),
+                                    vertices.get(index2),
+                                    vertices.get(index3)
+                            );
+                        }
+                        break;
+
+                    case TRIANGLE_STRIP:
+                        for (int i = 0; i < part.getCount() - 2; i++) {
+                            int index1 = indices.get(part.getStartIndex() + i);
+                            int index2 = indices.get(part.getStartIndex() + i + 1);
+                            int index3 = indices.get(part.getStartIndex() + i + 2);
+
+                            Vertex v1 = vertices.get(index1);
+                            Vertex v2 = vertices.get(index2);
+                            Vertex v3 = vertices.get(index3);
+
+                            if (i % 2 == 0) {
+                                Vertex temp = v2;
+                                v2 = v3;
+                                v3 = temp;
+                            }
+                            clipZ(v1, v2, v3);
+                            //start += 3;
+                            //triangleRasterizer.rasterize(v1, v2, v3);
+                        }
+                        break;
+                }
             }
         }
+    }
+
+    // rychlé ořezání
+    private boolean isInView(List<Vertex> vertices) {
+        boolean tooLeft = false;
+        for(Vertex v : vertices) {
+            if(v.getX() < -v.getPosition().getW()) {
+                tooLeft = true;
+            }
+        }
+
+        boolean tooRight = false;
+        for(Vertex v : vertices) {
+            if(v.getX() > v.getPosition().getW()) {
+                tooRight = true;
+            }
+        }
+
+        boolean tooUp = false;
+        for(Vertex v : vertices) {
+            if(v.getY() < -v.getPosition().getW()) {
+                tooUp = true;
+            }
+        }
+
+        boolean tooDown = false;
+        for(Vertex v : vertices) {
+            if(v.getY() > v.getPosition().getW()) {
+                tooDown = true;
+            }
+        }
+
+        boolean tooFar = false;
+        for(Vertex v : vertices) {
+            if(v.getZ() < 0) {
+                tooFar = true;
+            }
+        }
+
+        boolean tooBehind = false;
+        for(Vertex v : vertices) {
+            if(v.getZ() > v.getPosition().getW()) {
+                tooBehind = true;
+            }
+        }
+
+        return !(tooLeft || tooRight || tooUp || tooDown || tooFar || tooBehind);
+    }
+
+    // vytvoří nové Vertexy a pošle je do Rasterizeru
+    private void clipZ(Vertex vA, Vertex vB, Vertex vC) {
+        // protřídění všech Vertexů podle Z
+        if (vA.getPosition().getZ() < vB.getPosition().getZ()) {
+            Vertex temp = vA; vA = vB; vB = temp;
+        }
+
+        if(vB.getPosition().getZ() < vC.getPosition().getZ()) {
+            Vertex temp = vB; vB = vC; vC = temp;
+        }
+
+        if(vA.getPosition().getZ() < vB.getPosition().getZ()) {
+            Vertex temp = vA; vA = vB; vB = temp;
+        }
+
+        double zMin = 0; // glitch kvůli double nepřesné hodnotě
+        // TODO zkusit jinou hodnotu (ne diskrétní), pokud trojúhelník glitchuje
+        IO.println(0.1 + 0.2);
+        IO.println(0.3);
+
+        // ořezání (vA = nejvzdálenější Vertex)
+        // 1) trojúhelník je za pozorovatel, nic nevykreslujeme
+        if(vA.getPosition().getZ() < zMin) {
+            return;
+        }
+
+        // 2) je vidět jen část, kreslíme trojúhelník
+        if(vB.getPosition().getZ() < zMin) {
+            double tAB = (zMin - vA.getPosition().getZ()) / (vB.getPosition().getZ() - vA.getPosition().getZ());
+            double tAC = (zMin - vA.getPosition().getZ()) / (vC.getPosition().getZ() - vA.getPosition().getZ());
+
+            Vertex vD = Lerp.compute(vA, vB, tAB);
+            Vertex vE = Lerp.compute(vA, vC, tAC);
+
+            // vykreslíme nový trojúhelník
+            renderTriangle(vA, vD, vE);
+            return;
+        }
+
+        // 3) je vidět čtyřúhelník, triangulujeme na 2 trojúhelníky
+        if(vC.getPosition().getZ() < zMin) {
+            double tBC = (zMin - vB.getPosition().getZ()) / (vC.getPosition().getZ() - vB.getPosition().getZ());
+
+            double tAC = (zMin - vA.getPosition().getZ()) / (vC.getPosition().getZ() - vA.getPosition().getZ());
+
+            // 2 vytvořené trojúhelníky, protože quad
+            Vertex vD = Lerp.compute(vB, vC, tBC);
+            Vertex vE = Lerp.compute(vA, vC, tAC);
+
+            // vykreslíme nový trojúhelník
+            renderTriangle(vA, vB, vD);
+            renderTriangle(vA, vD, vE);
+            return; // abychom náhodou nevykreslovali ten, co nevidíme
+        }
+
+        // 4) je vidět celý trojúhelník
+        renderTriangle(vA, vB, vC);
+    }
+
+    private void renderTriangle(Vertex v1, Vertex v2, Vertex v3) {
+        // dehomog. každý Vertex, abychom byli v NDC
+        v1 = v1.dehomog().isPresent() ? v1.dehomog().get() : v1.dehomog().orElse(v1);
+        v2 = v2.dehomog().isPresent() ? v2.dehomog().get() : v2.dehomog().orElse(v2);
+        v3 = v3.dehomog().isPresent() ? v3.dehomog().get() : v3.dehomog().orElse(v3);
+
+        // transformace do okna
+
+
+        // rasterizace (poslat do Rasterizer)
+        // 1x triangleRasterizer - pro plochu trojuhelnika
+        triangleRasterizer.rasterize(v1, v2, v3);
+
+        // 3x lineRasterizer - pro hrany trojuhelnika
+        lineRasterizer.rasterize(v1, v2);
+        lineRasterizer.rasterize(v2, v3);
+        lineRasterizer.rasterize(v3, v1);
     }
 }

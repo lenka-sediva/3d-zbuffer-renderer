@@ -58,7 +58,8 @@ public class Controller {
 
         // šipka
         Renderer3D renderer = new Renderer3D();
-        renderer.setTriangleRasterizer(triangleRasterizer, lineRasterizer);
+        renderer.setTriangleRasterizer(triangleRasterizer);
+        renderer.setLineRasterizer(lineRasterizer);
 
         renderer.renderSolid(arrow);
     }
