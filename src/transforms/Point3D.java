@@ -347,7 +347,7 @@ public class Point3D {
 	 */
 	@Override
 	public String toString() {
-		return toString("%4.1f");
+		return toString("%4.3f");
 	}
 	
 	/**

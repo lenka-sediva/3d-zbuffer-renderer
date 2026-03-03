@@ -4,13 +4,30 @@ import transforms.Col;
 import transforms.Point3D;
 import transforms.Vec2D;
 import transforms.Vec3D;
+import utilities.Vectorizable;
 
-public class Vertex implements Vectorizable<Vertex>{
+public class Vertex implements Vectorizable<Vertex> {
     private Point3D position;
     private final Col col;
-    private Vec2D texUV;
-    private Vec3D normal;
-    private double one;
+    private final Vec2D texUV;
+    private final Vec3D normal;
+    private final double one;
+
+    public Col getColor() {
+        return col;
+    }
+
+    public Vec2D getTexUV() {
+        return texUV;
+    }
+
+    public Vec3D getNormal() {
+        return normal;
+    }
+
+    public double getOne() {
+        return one;
+    }
 
     public Vertex(Point3D position, Col col) {
         this(position, col, new Vec2D(0,0), new Vec3D(0,0,0), 1.0);
@@ -44,10 +61,6 @@ public class Vertex implements Vectorizable<Vertex>{
         return position.getZ();
     }
 
-    public Col getColor() {
-        return col;
-    }
-
     // pro možnost změny pozice vrcholu
     public void setPosition(Point3D position) {
         this.position = position;
@@ -56,28 +69,35 @@ public class Vertex implements Vectorizable<Vertex>{
     @Override
     public Vertex mul(double scalar) {
         return new Vertex(
-                position.mul(scalar),
-                col.mul(scalar),
-                texUV.mul(scalar),
-                normal.mul(scalar),
-                one * scalar
+                this.position.mul(scalar),
+                this.col.mul(scalar).saturate(),
+                // TODO mul all atributes
+                this.texUV.mul(scalar),
+                this.normal.mul(scalar),
+                this.one * scalar
         );
     }
 
     @Override
-    public Vertex add(Vertex v) {
+    public Vertex add(Vertex other) {
         return new Vertex(
-                position.add(v.position),
-                col.add(v.col),
-                texUV.add(v.texUV),
-                normal.add(v.normal),
-                one + v.one
+                this.position.add(other.getPosition()),
+                this.col.add(other.getColor()).saturate(),
+                // TODO all atributes
+                this.texUV.add(other.getTexUV()),
+                this.normal.add(other.getNormal()),
+                this.one + other.getOne()
         );
     }
 
     @Override
     public String toString() {
-        return String.format("Vertex { position = %s, color = %s, texUV = %s, normal = %s, one = %.2f }",
-                position, col, texUV, normal, one);
+        return "Vertex { " +
+                "position = " + position +
+                ", col = " + col +
+                ", texUV = " + texUV +
+                ", normal = " + normal +
+                ", one = " + one +
+                '}';
     }
 }

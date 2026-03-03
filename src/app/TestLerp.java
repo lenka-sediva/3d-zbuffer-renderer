@@ -1,25 +1,24 @@
 package app;
 
-import model.objectdata.Lerp;
 import model.objectdata.Vertex;
 import transforms.Col;
 import transforms.Point3D;
-import transforms.Vec2D;
-import transforms.Vec3D;
+import utilities.Lerp;
+
+import java.io.IO;
 
 public class TestLerp {
     public static void main(String[] args) {
-        Vertex v1 = new Vertex(new Point3D(1,2,3), new Col(0xFF0000),
-                new Vec2D(0,0), new Vec3D(0,0,1), 1.0);
-        Vertex v2 = new Vertex(new Point3D(4,5,6), new Col(0x00FF00),
-                new Vec2D(1,1), new Vec3D(1,0,0), 1.0);
+        Vertex v1 = new Vertex(new Point3D(1,2,3), new Col(0xFF0000));
+        Vertex v2 = new Vertex(new Point3D(2,3,4), new Col(0x00FF00));
+
         double t = 0.44;
 
-        Lerp<Vertex> lerp = new Lerp<>();
-        Vertex result = lerp.lerp(v1, v2, t);
+        // LERP = ((1 - t) * v1) + (v2 * t)
+        Vertex v3 = v1.mul(1 - t).add(v2.mul(t));
+        var v4 = Lerp.compute(v1, v2, t);
 
-        System.out.println("v1 = " + v1);
-        System.out.println("v2 = " + v2);
-        System.out.println("result = " + result);
+        IO.println(v3);
+        IO.println(v4);
     }
 }
