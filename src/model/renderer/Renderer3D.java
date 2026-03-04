@@ -5,27 +5,37 @@ import model.objectdata.Solid;
 import model.objectdata.Vertex;
 import model.rasterops.LineRasterizer;
 import model.rasterops.TriangleRasterizer;
+import transforms.Mat4;
+import transforms.Point3D;
 import utilities.Lerp;
 
 import java.io.IO;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Renderer3D {
 
     private TriangleRasterizer triangleRasterizer;
     private LineRasterizer lineRasterizer;
+    private int width;
+    private int height;
 
     public Renderer3D() {
 
     }
 
-    public void renderSolids(List<Solid> solids) {
+    public void setViewport(int width, int height) {
+        this.width = width;
+        this.height = height;
+    }
+
+    public void renderSolids(List<Solid> solids, Mat4 model, Mat4 view, Mat4 proj) {
         // TODO for each solid
         // render Solid
         if (solids == null) return;
 
         for (Solid s : solids) {
-            renderSolid(s);
+            renderSolid(s, model, view, proj);
         }
     }
 
@@ -37,14 +47,21 @@ public class Renderer3D {
         this.lineRasterizer = lineRasterizer;
     }
 
-    // TODO
-    public void renderSolid(Solid solid) {
+    public void renderSolid(Solid solid, Mat4 model, Mat4 view, Mat4 proj) {
         if(solid == null) return;
 
-        List<Vertex> vertices = solid.getVertexBuffer();
+        Mat4 mvp = proj.mul(view).mul(model); // model * view * projection
+
+        List<Vertex> vertices = new ArrayList<>();
         List<Integer> indices = solid.getIndexBuffer();
         List<Part> parts = solid.getPartBuffer();
 
+        // transformace všech Vertexů do clip space
+        for(Vertex v : solid.getVertexBuffer()) {
+            vertices.add(v.transf(mvp));
+        }
+
+        // frustum culling - rychlé ořezání, pokud všechny vrcholy jsou mimo view
         if(isInView(vertices)) {
             for (Part part : parts) {
                 switch (part.getTopologyType()) {
@@ -53,10 +70,13 @@ public class Renderer3D {
                             int index1 = indices.get(part.getStartIndex() + i);
                             int index2 = indices.get(part.getStartIndex() + i + 1);
 
-                            lineRasterizer.rasterize(
-                                    vertices.get(index1),
-                                    vertices.get(index2)
-                            );
+                            Vertex v1 = vertices.get(index1).dehomog().orElse(vertices.get(index1));
+                            Vertex v2 = vertices.get(index2).dehomog().orElse(vertices.get(index2));
+
+                            v1 = toWindow(v1);
+                            v2 = toWindow(v2);
+
+                            lineRasterizer.rasterize(v1, v2);
                         }
                         break;
 
@@ -101,49 +121,31 @@ public class Renderer3D {
 
     // rychlé ořezání
     private boolean isInView(List<Vertex> vertices) {
-        boolean tooLeft = false;
-        for(Vertex v : vertices) {
-            if(v.getX() < -v.getPosition().getW()) {
-                tooLeft = true;
-            }
+
+        boolean allLeft = true;
+        boolean allRight = true;
+        boolean allUp = true;
+        boolean allDown = true;
+        boolean allFar = true;
+        boolean allBehind = true;
+
+        for (Vertex v : vertices) {
+            double x = v.getPosition().getX();
+            double y = v.getPosition().getY();
+            double z = v.getPosition().getZ();
+            double w = v.getPosition().getW();
+
+            if (x >= -w) allLeft = false;
+            if (x <=  w) allRight = false;
+
+            if (y >= -w) allUp = false;
+            if (y <=  w) allDown = false;
+
+            if (z >= 0) allFar = false;
+            if (z <= w) allBehind = false;
         }
 
-        boolean tooRight = false;
-        for(Vertex v : vertices) {
-            if(v.getX() > v.getPosition().getW()) {
-                tooRight = true;
-            }
-        }
-
-        boolean tooUp = false;
-        for(Vertex v : vertices) {
-            if(v.getY() < -v.getPosition().getW()) {
-                tooUp = true;
-            }
-        }
-
-        boolean tooDown = false;
-        for(Vertex v : vertices) {
-            if(v.getY() > v.getPosition().getW()) {
-                tooDown = true;
-            }
-        }
-
-        boolean tooFar = false;
-        for(Vertex v : vertices) {
-            if(v.getZ() < 0) {
-                tooFar = true;
-            }
-        }
-
-        boolean tooBehind = false;
-        for(Vertex v : vertices) {
-            if(v.getZ() > v.getPosition().getW()) {
-                tooBehind = true;
-            }
-        }
-
-        return !(tooLeft || tooRight || tooUp || tooDown || tooFar || tooBehind);
+        return !(allLeft || allRight || allUp || allDown || allFar || allBehind);
     }
 
     // vytvoří nové Vertexy a pošle je do Rasterizeru
@@ -188,7 +190,6 @@ public class Renderer3D {
         // 3) je vidět čtyřúhelník, triangulujeme na 2 trojúhelníky
         if(vC.getPosition().getZ() < zMin) {
             double tBC = (zMin - vB.getPosition().getZ()) / (vC.getPosition().getZ() - vB.getPosition().getZ());
-
             double tAC = (zMin - vA.getPosition().getZ()) / (vC.getPosition().getZ() - vA.getPosition().getZ());
 
             // 2 vytvořené trojúhelníky, protože quad
@@ -212,15 +213,28 @@ public class Renderer3D {
         v3 = v3.dehomog().isPresent() ? v3.dehomog().get() : v3.dehomog().orElse(v3);
 
         // transformace do okna
-
+        v1 = toWindow(v1);
+        v2 = toWindow(v2);
+        v3 = toWindow(v3);
 
         // rasterizace (poslat do Rasterizer)
         // 1x triangleRasterizer - pro plochu trojuhelnika
         triangleRasterizer.rasterize(v1, v2, v3);
 
         // 3x lineRasterizer - pro hrany trojuhelnika
-        lineRasterizer.rasterize(v1, v2);
-        lineRasterizer.rasterize(v2, v3);
-        lineRasterizer.rasterize(v3, v1);
+//        lineRasterizer.rasterize(v1, v2);
+//        lineRasterizer.rasterize(v2, v3);
+//        lineRasterizer.rasterize(v3, v1);
+    }
+
+    private Vertex toWindow(Vertex v) {
+        double x = (v.getX() + 1) * 0.5 * (width - 1);
+        double y = (1 - v.getY()) * 0.5 * (height - 1); // Y osa dolů
+        double z = v.getZ();
+
+        return new Vertex(
+                new Point3D(x, y, z),
+                v.getColor()
+        );
     }
 }

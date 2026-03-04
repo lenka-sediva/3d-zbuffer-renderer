@@ -11,7 +11,7 @@ public class Arrow extends Solid {
 
     public Arrow() {
 
-        double z = 0.5;
+        double z = -0.5;
 
         // VERTEX BUFFER
         // střed (sdílený vrchol)

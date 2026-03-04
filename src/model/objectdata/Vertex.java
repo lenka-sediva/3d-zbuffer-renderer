@@ -1,9 +1,6 @@
 package model.objectdata;
 
-import transforms.Col;
-import transforms.Point3D;
-import transforms.Vec2D;
-import transforms.Vec3D;
+import transforms.*;
 import utilities.Vectorizable;
 
 import java.util.Optional;
@@ -63,11 +60,6 @@ public class Vertex implements Vectorizable<Vertex> {
         return position.getZ();
     }
 
-    // pro možnost změny pozice vrcholu
-    public void setPosition(Point3D position) {
-        this.position = position;
-    }
-
     @Override
     public Vertex mul(double scalar) {
         return new Vertex(
@@ -106,6 +98,10 @@ public class Vertex implements Vectorizable<Vertex> {
                 this.col.mul(1 / w).saturate()
                 // TODO dehomog všechny atributy
         ));
+    }
+
+    public Vertex transf(Mat4 m) {
+        return new Vertex(position.mul(m), col, texUV, normal, one);
     }
 
     @Override
