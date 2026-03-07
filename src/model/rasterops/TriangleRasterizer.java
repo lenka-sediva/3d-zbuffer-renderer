@@ -123,13 +123,13 @@ public class TriangleRasterizer {
     // součást 3D pipeline, provádí viewport transformaci a Gouradovu interpolaci atributů
     public void rasterize(Vertex vA, Vertex vB, Vertex vC) {
         // viewport transformace
-        Vec2D a = viewportTransformation(vA);
-        Vec2D b = viewportTransformation(vB);
-        Vec2D c = viewportTransformation(vC);
+//        Vec2D a = viewportTransformation(vA);
+//        Vec2D b = viewportTransformation(vB);
+//        Vec2D c = viewportTransformation(vC);
 
-        double ax = a.getX(), ay = a.getY(), az = vA.getPosition().getZ();
-        double bx = b.getX(), by = b.getY(), bz = vB.getPosition().getZ();
-        double cx = c.getX(), cy = c.getY(), cz = vC.getPosition().getZ();
+        double ax = vA.getX(), ay = vA.getY(), az = vA.getPosition().getZ();
+        double bx = vB.getX(), by = vB.getY(), bz = vB.getPosition().getZ();
+        double cx = vC.getX(), cy = vC.getY(), cz = vC.getPosition().getZ();
 
         Col colA = vA.getColor();
         Col colB = vB.getColor();

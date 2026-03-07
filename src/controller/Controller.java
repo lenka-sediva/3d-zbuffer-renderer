@@ -19,16 +19,18 @@ public class Controller {
     private final LineRasterizer lineRasterizer;
     private final Solid arrow;
     private final Solid tetrahedron;
+    private final Renderer3D renderer;
 
     public Controller(Canvas canvas) {
         this.canvas = canvas;
         this.vB = new Visibility(canvas.getRaster());
         this.arrow = new Arrow();
         this.tetrahedron = new Tetrahedron();
+        this.renderer = new Renderer3D();
 
         this.triangleRasterizer = new TriangleRasterizer(vB);
         // this.lineRasterizer = new LineRasterizerBresenham(vB); // nejde
-        this.lineRasterizer = new LineRasterizerBresenham(canvas.getRaster());
+        this.lineRasterizer = new LineRasterizerBresenham(canvas.getRaster()); // TODO
 
         initListeners(canvas);
         redraw();
@@ -55,9 +57,9 @@ public class Controller {
         //TriangleRasterizer.rasterize(vB, t2a, t2b, t2c, new Col(1., 1., 0));
 
         // šipka
-        Renderer3D renderer = new Renderer3D();
         renderer.setTriangleRasterizer(triangleRasterizer);
         renderer.setLineRasterizer(lineRasterizer);
+        renderer.setViewport(canvas.getWidth(), canvas.getHeight());
 
         // transformační matice
         Mat4 model = new Mat4Identity();

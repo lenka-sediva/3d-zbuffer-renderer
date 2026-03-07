@@ -50,7 +50,7 @@ public class Renderer3D {
     public void renderSolid(Solid solid, Mat4 model, Mat4 view, Mat4 proj) {
         if(solid == null) return;
 
-        Mat4 mvp = proj.mul(view).mul(model); // model * view * projection
+        Mat4 mvp = model.mul(view).mul(proj); // model * view * projection
 
         List<Vertex> vertices = new ArrayList<>();
         List<Integer> indices = solid.getIndexBuffer();
@@ -165,8 +165,8 @@ public class Renderer3D {
 
         double zMin = 0; // glitch kvůli double nepřesné hodnotě
         // TODO zkusit jinou hodnotu (ne diskrétní), pokud trojúhelník glitchuje
-        IO.println(0.1 + 0.2);
-        IO.println(0.3);
+//        IO.println(0.1 + 0.2);
+//        IO.println(0.3);
 
         // ořezání (vA = nejvzdálenější Vertex)
         // 1) trojúhelník je za pozorovatel, nic nevykreslujeme

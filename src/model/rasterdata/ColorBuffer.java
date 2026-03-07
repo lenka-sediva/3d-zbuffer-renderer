@@ -31,6 +31,10 @@ public class ColorBuffer implements Raster<Col> {
 
     @Override
     public void setPixel(int x, int y, Col pixelValue) {
+        if (x < 0 || x >= getWidth() || y < 0 || y >= getHeight()) {
+            return;
+        }
+
         img.setRGB(x, y, pixelValue.getRGB());
     }
 
