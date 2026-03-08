@@ -5,6 +5,7 @@ import model.objectdata.Solid;
 import model.objectdata.Vertex;
 import model.rasterops.LineRasterizer;
 import model.rasterops.TriangleRasterizer;
+import transforms.Camera;
 import transforms.Mat4;
 import transforms.Point3D;
 import utilities.Lerp;
@@ -19,6 +20,7 @@ public class Renderer3D {
     private LineRasterizer lineRasterizer;
     private int width;
     private int height;
+    private Mat4 view;
 
     public Renderer3D() {
 
@@ -29,7 +31,7 @@ public class Renderer3D {
         this.height = height;
     }
 
-    public void renderSolids(List<Solid> solids, Mat4 model, Mat4 view, Mat4 proj) {
+    public void renderSolids(List<Solid> solids, Mat4 model, Camera view, Mat4 proj) {
         // TODO for each solid
         // render Solid
         if (solids == null) return;
@@ -47,10 +49,10 @@ public class Renderer3D {
         this.lineRasterizer = lineRasterizer;
     }
 
-    public void renderSolid(Solid solid, Mat4 model, Mat4 view, Mat4 proj) {
+    public void renderSolid(Solid solid, Mat4 model, Camera view, Mat4 proj) {
         if(solid == null) return;
 
-        Mat4 mvp = model.mul(view).mul(proj); // model * view * projection
+        Mat4 mvp = model.mul(view.getViewMatrix()).mul(proj); // model * view * projection
 
         List<Vertex> vertices = new ArrayList<>();
         List<Integer> indices = solid.getIndexBuffer();
@@ -236,5 +238,9 @@ public class Renderer3D {
                 new Point3D(x, y, z),
                 v.getColor()
         );
+    }
+
+    public void setView(Mat4 viewMatrix) {
+        this.view = view;
     }
 }

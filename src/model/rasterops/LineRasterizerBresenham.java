@@ -1,6 +1,7 @@
 package model.rasterops;
 
 import model.rasterdata.ColorBuffer;
+import model.rasterdata.Visibility;
 
 /**
  * Bresenhamův algoritmus
@@ -24,12 +25,12 @@ import model.rasterdata.ColorBuffer;
 
 public class LineRasterizerBresenham extends LineRasterizer {
 
-    public LineRasterizerBresenham(ColorBuffer raster) {
+    public LineRasterizerBresenham(Visibility raster) {
         super(raster);
     }
 
     @Override
-    protected void drawLine(int x1, int y1, int x2, int y2) {
+    protected void drawLine(int x1, int y1, double z1, int x2, int y2, double z2) {
         int dx = Math.abs(x2 - x1);
         int dy = Math.abs(y2 - y1);
 
@@ -38,9 +39,13 @@ public class LineRasterizerBresenham extends LineRasterizer {
 
         int error = dx - dy; // počáteční chyba (odchylka) od ideální úsečky
 
+        double z = z1;
+        double dz = (dx > dy) ? (z2 - z1) / dx : (z2 - z1) / dy;
+        if (dx == 0 && dy == 0) dz = 0;
+
         while (true) {
-            // vykreslí kruh kolem aktuálního bodu, aby byla čára silná
-            raster.setPixel(x1, y1, color);
+            // vykreslí pixel s Z testem
+            raster.setPixelWithZTest(x1, y1, z, color);
 
             if (x1 == x2 && y1 == y2) break; // konec při dosažení koncového bodu
 
@@ -48,14 +53,16 @@ public class LineRasterizerBresenham extends LineRasterizer {
 
             // posun po x
             if (e2 > -dy) {
-                error = error - dy;
-                x1 = x1 + sx;
+                error -= dy;
+                x1 += sx;
+                z += dz;
             }
 
             // posun po y
             if (e2 < dx) {
-                error = error + dx;
-                y1 = y1 + sy;
+                error += dx;
+                y1 += sy;
+                z += dz;
             }
         }
     }

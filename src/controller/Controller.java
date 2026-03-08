@@ -12,6 +12,9 @@ import model.renderer.Renderer3D;
 import transforms.*;
 import view.Canvas;
 
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+
 public class Controller {
     private final Canvas canvas;
     private final Visibility vB;
@@ -20,6 +23,7 @@ public class Controller {
     private final Solid arrow;
     private final Solid tetrahedron;
     private final Renderer3D renderer;
+    private Camera view;
 
     public Controller(Canvas canvas) {
         this.canvas = canvas;
@@ -30,7 +34,9 @@ public class Controller {
 
         this.triangleRasterizer = new TriangleRasterizer(vB);
         // this.lineRasterizer = new LineRasterizerBresenham(vB); // nejde
-        this.lineRasterizer = new LineRasterizerBresenham(canvas.getRaster()); // TODO
+        this.lineRasterizer = new LineRasterizerBresenham(vB);
+
+        view = new Camera(new Vec3D(0, 0, 0), Math.PI * 1.25, Math.PI * -0.125, 3, false);
 
         initListeners(canvas);
         redraw();
@@ -62,16 +68,68 @@ public class Controller {
         renderer.setViewport(canvas.getWidth(), canvas.getHeight());
 
         // transformační matice
-        Mat4 model = new Mat4Identity();
-        Mat4 view = new Mat4Identity();
-        Mat4 proj = new Mat4OrthoRH(1, 1, 0.1, 10); // jednoduchá ortografická projekce
+        Mat4 proj = new Mat4PerspRH(
+                Math.toRadians(45),
+                (double) canvas.getWidth() / canvas.getHeight(),
+                0.1,
+                100
+        );
+        // Oprava modelové matice pro šipku a tetrahedron
+        Mat4 arrowModel = new Mat4Identity();
+        Mat4 tetrahedronModel = new Mat4RotX(Math.PI); // otočení tetrahedronu
 
-        renderer.renderSolid(arrow, model, view, proj);
-        renderer.renderSolid(tetrahedron, model, view, proj);
+        renderer.renderSolid(arrow, arrowModel, view, proj);
+        renderer.renderSolid(tetrahedron, tetrahedronModel, view, proj);
     }
 
     private void initListeners(Canvas canvas) {
+        canvas.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                // pohyby kamery WASD
+                switch (e.getKeyCode()) {
+                    case java.awt.event.KeyEvent.VK_W:
+                        view = view.forward(0.1);
+                        redraw();
+                        break;
 
+                    case java.awt.event.KeyEvent.VK_A:
+                        view = view.left(0.1);
+                        redraw();
+                        break;
+
+                    case java.awt.event.KeyEvent.VK_S:
+                        view = view.backward(0.1);
+                        redraw();
+                        break;
+
+                    case java.awt.event.KeyEvent.VK_D:
+                        view = view.right(0.1);
+                        redraw();
+                        break;
+
+                    case KeyEvent.VK_LEFT:
+                        view = view.addAzimuth(-0.1);
+                        redraw();
+                        break;
+
+                    case KeyEvent.VK_RIGHT:
+                        view = view.addAzimuth(0.1);
+                        redraw();
+                        break;
+
+                    case KeyEvent.VK_UP:
+                        view = view.addZenith(-0.1);
+                        redraw();
+                        break;
+
+                    case KeyEvent.VK_DOWN:
+                        view = view.addZenith(0.1);
+                        redraw();
+                        break;
+                }
+            }
+        });
     }
 
     private void redraw() {

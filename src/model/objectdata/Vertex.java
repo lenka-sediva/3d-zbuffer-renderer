@@ -6,7 +6,7 @@ import utilities.Vectorizable;
 import java.util.Optional;
 
 public class Vertex implements Vectorizable<Vertex> {
-    private Point3D position;
+    private final Point3D position;
     private final Col col;
     private final Vec2D texUV;
     private final Vec3D normal;
@@ -65,7 +65,6 @@ public class Vertex implements Vectorizable<Vertex> {
         return new Vertex(
                 this.position.mul(scalar),
                 this.col.mul(scalar).saturate(),
-                // TODO mul all atributes
                 this.texUV.mul(scalar),
                 this.normal.mul(scalar),
                 this.one * scalar
@@ -77,7 +76,6 @@ public class Vertex implements Vectorizable<Vertex> {
         return new Vertex(
                 this.position.add(other.getPosition()),
                 this.col.add(other.getColor()).saturate(),
-                // TODO all atributes
                 this.texUV.add(other.getTexUV()),
                 this.normal.add(other.getNormal()),
                 this.one + other.getOne()
@@ -95,8 +93,10 @@ public class Vertex implements Vectorizable<Vertex> {
 
         return Optional.of(new Vertex(
                 this.position.mul(1 / w),
-                this.col.mul(1 / w).saturate()
-                // TODO dehomog všechny atributy
+                this.col.mul(1 / w).saturate(),
+                this.texUV.mul(1 / w),
+                this.normal.mul(1 / w),
+                this.one / w
         ));
     }
 

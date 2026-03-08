@@ -11,12 +11,12 @@ public class Tetrahedron extends Solid {
 
     public Tetrahedron() {
 
-        double zOffset = -2;
+        double zOffset = -0.5;
 
         // VERTEX BUFFER
-        vertexBuffer.add(new Vertex(new Point3D( 0,  0.5, zOffset), new Col(255,0,0))); // 0
-        vertexBuffer.add(new Vertex(new Point3D(-0.5, -0.5, zOffset), new Col(0,255,0))); // 1
-        vertexBuffer.add(new Vertex(new Point3D( 0.5, -0.5, zOffset), new Col(0,0,255))); // 2
+        vertexBuffer.add(new Vertex(new Point3D( 0,  0.5, zOffset), new Col(255,255,0))); // 0
+        vertexBuffer.add(new Vertex(new Point3D(-0.5, -0.5, zOffset), new Col(255,0,0))); // 1
+        vertexBuffer.add(new Vertex(new Point3D( 0.5, -0.5, zOffset), new Col(0,255,0))); // 2
         vertexBuffer.add(new Vertex(new Point3D( 0,  0, zOffset - 0.7), new Col(255,255,0))); // 3 (zadní vrchol)
 
         // INDEX BUFFER
