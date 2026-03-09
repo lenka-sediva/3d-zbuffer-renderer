@@ -75,8 +75,8 @@ public class Renderer3D {
                             Vertex v1 = vertices.get(index1).dehomog().orElse(vertices.get(index1));
                             Vertex v2 = vertices.get(index2).dehomog().orElse(vertices.get(index2));
 
-                            v1 = toWindow(v1);
-                            v2 = toWindow(v2);
+                            v1 = transformToWindow(v1);
+                            v2 = transformToWindow(v2);
 
                             lineRasterizer.rasterize(v1, v2);
                         }
@@ -123,7 +123,6 @@ public class Renderer3D {
 
     // rychlé ořezání
     private boolean isInView(List<Vertex> vertices) {
-
         boolean allLeft = true;
         boolean allRight = true;
         boolean allUp = true;
@@ -165,19 +164,20 @@ public class Renderer3D {
             Vertex temp = vA; vA = vB; vB = temp;
         }
 
-        double zMin = 0; // glitch kvůli double nepřesné hodnotě
+        double zMin = 0.01; // glitch kvůli double nepřesné hodnotě
         // TODO zkusit jinou hodnotu (ne diskrétní), pokud trojúhelník glitchuje
 //        IO.println(0.1 + 0.2);
 //        IO.println(0.3);
 
         // ořezání (vA = nejvzdálenější Vertex)
         // 1) trojúhelník je za pozorovatel, nic nevykreslujeme
-        if(vA.getPosition().getZ() < zMin) {
+        if(vA.getZ() < zMin) {
+            System.out.println("Trojuhelník je před kamerou, ale projdeme ho pro debug");
             return;
         }
 
         // 2) je vidět jen část, kreslíme trojúhelník
-        if(vB.getPosition().getZ() < zMin) {
+        if(vB.getZ() < zMin) {
             double tAB = (zMin - vA.getPosition().getZ()) / (vB.getPosition().getZ() - vA.getPosition().getZ());
             double tAC = (zMin - vA.getPosition().getZ()) / (vC.getPosition().getZ() - vA.getPosition().getZ());
 
@@ -190,7 +190,7 @@ public class Renderer3D {
         }
 
         // 3) je vidět čtyřúhelník, triangulujeme na 2 trojúhelníky
-        if(vC.getPosition().getZ() < zMin) {
+        if(vC.getZ() < zMin) {
             double tBC = (zMin - vB.getPosition().getZ()) / (vC.getPosition().getZ() - vB.getPosition().getZ());
             double tAC = (zMin - vA.getPosition().getZ()) / (vC.getPosition().getZ() - vA.getPosition().getZ());
 
@@ -210,14 +210,14 @@ public class Renderer3D {
 
     private void renderTriangle(Vertex v1, Vertex v2, Vertex v3) {
         // dehomog. každý Vertex, abychom byli v NDC
-        v1 = v1.dehomog().isPresent() ? v1.dehomog().get() : v1.dehomog().orElse(v1);
-        v2 = v2.dehomog().isPresent() ? v2.dehomog().get() : v2.dehomog().orElse(v2);
-        v3 = v3.dehomog().isPresent() ? v3.dehomog().get() : v3.dehomog().orElse(v3);
+        v1 = v1.dehomog().orElse(v1);
+        v2 = v2.dehomog().orElse(v2);
+        v3 = v3.dehomog().orElse(v3);
 
         // transformace do okna
-        v1 = toWindow(v1);
-        v2 = toWindow(v2);
-        v3 = toWindow(v3);
+        v1 = transformToWindow(v1);
+        v2 = transformToWindow(v2);
+        v3 = transformToWindow(v3);;
 
         // rasterizace (poslat do Rasterizer)
         // 1x triangleRasterizer - pro plochu trojuhelnika
@@ -229,7 +229,7 @@ public class Renderer3D {
 //        lineRasterizer.rasterize(v3, v1);
     }
 
-    private Vertex toWindow(Vertex v) {
+    private Vertex transformToWindow(Vertex v) {
         double x = (v.getX() + 1) * 0.5 * (width - 1);
         double y = (1 - v.getY()) * 0.5 * (height - 1); // Y osa dolů
         double z = v.getZ();
@@ -238,9 +238,5 @@ public class Renderer3D {
                 new Point3D(x, y, z),
                 v.getColor()
         );
-    }
-
-    public void setView(Mat4 viewMatrix) {
-        this.view = view;
     }
 }

@@ -11,7 +11,7 @@ public class Tetrahedron extends Solid {
 
     public Tetrahedron() {
 
-        double zOffset = -0.5;
+        double zOffset = -0.1; // posun
 
         // VERTEX BUFFER
         vertexBuffer.add(new Vertex(new Point3D( 0,  0.5, zOffset), new Col(255,255,0))); // 0

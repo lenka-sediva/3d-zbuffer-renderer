@@ -76,7 +76,7 @@ public class Controller {
         );
         // Oprava modelové matice pro šipku a tetrahedron
         Mat4 arrowModel = new Mat4Identity();
-        Mat4 tetrahedronModel = new Mat4RotX(Math.PI); // otočení tetrahedronu
+        Mat4 tetrahedronModel = new Mat4Identity(); // otočení tetrahedronu
 
         renderer.renderSolid(arrow, arrowModel, view, proj);
         renderer.renderSolid(tetrahedron, tetrahedronModel, view, proj);
@@ -88,22 +88,22 @@ public class Controller {
             public void keyPressed(KeyEvent e) {
                 // pohyby kamery WASD
                 switch (e.getKeyCode()) {
-                    case java.awt.event.KeyEvent.VK_W:
+                    case KeyEvent.VK_W:
                         view = view.forward(0.1);
                         redraw();
                         break;
 
-                    case java.awt.event.KeyEvent.VK_A:
+                    case KeyEvent.VK_A:
                         view = view.left(0.1);
                         redraw();
                         break;
 
-                    case java.awt.event.KeyEvent.VK_S:
+                    case KeyEvent.VK_S:
                         view = view.backward(0.1);
                         redraw();
                         break;
 
-                    case java.awt.event.KeyEvent.VK_D:
+                    case KeyEvent.VK_D:
                         view = view.right(0.1);
                         redraw();
                         break;

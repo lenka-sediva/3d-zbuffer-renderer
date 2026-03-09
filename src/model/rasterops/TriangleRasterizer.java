@@ -122,14 +122,9 @@ public class TriangleRasterizer {
     // pro šipku
     // součást 3D pipeline, provádí viewport transformaci a Gouradovu interpolaci atributů
     public void rasterize(Vertex vA, Vertex vB, Vertex vC) {
-        // viewport transformace
-//        Vec2D a = viewportTransformation(vA);
-//        Vec2D b = viewportTransformation(vB);
-//        Vec2D c = viewportTransformation(vC);
-
-        double ax = vA.getX(), ay = vA.getY(), az = vA.getPosition().getZ();
-        double bx = vB.getX(), by = vB.getY(), bz = vB.getPosition().getZ();
-        double cx = vC.getX(), cy = vC.getY(), cz = vC.getPosition().getZ();
+        double ax = vA.getX(), ay = vA.getY(), az = vA.getZ();
+        double bx = vB.getX(), by = vB.getY(), bz = vB.getZ();
+        double cx = vC.getX(), cy = vC.getY(), cz = vC.getZ();
 
         Col colA = vA.getColor();
         Col colB = vB.getColor();
@@ -219,19 +214,5 @@ public class TriangleRasterizer {
                 img.setPixelWithZTest(x, y, z, col);
             }
         }
-    }
-
-    // převádí NDC souřadnice (-1 až 1) do pixelů obrazovky
-    private Vec2D viewportTransformation(Vertex v) {
-        int width = img.getWidth();
-        int height = img.getHeight();
-
-        double xNdc = v.getPosition().getX();
-        double yNdc = v.getPosition().getY();
-
-        double xScreen = (xNdc + 1.0) * 0.5 * width;
-        double yScreen = (1.0 - yNdc) * 0.5 * height;
-
-        return new Vec2D(xScreen, yScreen);
     }
 }
