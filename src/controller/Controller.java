@@ -1,14 +1,11 @@
 package controller;
 
 import model.objectdata.Solid;
-import model.objects.Tetrahedron;
-import model.objects.Arrow;
-import model.rasterdata.ColorBuffer;
-import model.rasterdata.Visibility;
-import model.rasterops.LineRasterizer;
-import model.rasterops.LineRasterizerBresenham;
-import model.rasterops.TriangleRasterizer;
+import model.objects.*;
+import model.rasterdata.*;
+import model.rasterops.*;
 import model.renderer.Renderer3D;
+import shader.*;
 import transforms.*;
 import view.Canvas;
 
@@ -22,13 +19,12 @@ public class Controller {
     private final TriangleRasterizer triangleRasterizer;
     private final LineRasterizer lineRasterizer;
 
-    private final Solid arrow;
-    private final Solid tetrahedron;
+    private final Solid arrow, tetrahedron, sphere, cylinder;
 
     private final Renderer3D renderer;
     private Camera view;
     private Mat4 model, proj;
-    //private FragmentShader constantColor, smoothColor, textureColor;
+    private FragmentShader constantColor, smoothColor, textureColor;
 
     public Controller(Canvas canvas) {
         this.canvas = canvas;
@@ -37,8 +33,10 @@ public class Controller {
 
         this.arrow = new Arrow();
         this.tetrahedron = new Tetrahedron();
+        this.sphere = new Sphere(new Point3D(-1,2,0), 1.0, 20, 20);
+        this.cylinder = new Cylinder(new Point3D(-5,0,0), 1.0, 2.0, 20);
 
-        this.triangleRasterizer = new TriangleRasterizer(vB);
+        this.triangleRasterizer = new TriangleRasterizer(vB, v -> v.getColor());
         this.lineRasterizer = new LineRasterizerBresenham(vB);
 
         view = new Camera(new Vec3D(0, 0, 0), Math.PI * 1.25, Math.PI * -0.125, 3, false);
@@ -59,14 +57,22 @@ public class Controller {
 
         // transformační matice
         proj = new Mat4PerspRH(
-                Math.toRadians(45),
+                Math.toRadians(90),
                 (double) canvas.getHeight() / canvas.getWidth(),
                 1.0, // zNear
                 15. // zFar (very close, for clipping test)
         );
 
+        constantColor = new ConstantColor();
+        smoothColor = new SmoothColor();
+        textureColor = new TextureColor("res/mc_grass.jpg");
+
+        triangleRasterizer.setShader(smoothColor::getColor);
+
         renderer.renderSolid(arrow, model, view, proj);
         renderer.renderSolid(tetrahedron, model, view, proj);
+        renderer.renderSolid(sphere, model, view, proj);
+        renderer.renderSolid(cylinder, model, view, proj);
     }
 
     private void initListeners(Canvas canvas) {
@@ -114,6 +120,21 @@ public class Controller {
                         view = view.addZenith(0.1);
                         redraw();
                         break;
+
+                    case KeyEvent.VK_1:
+                        triangleRasterizer.setShader(constantColor::getColor);
+                        redraw();
+                        break;
+
+                    case KeyEvent.VK_2:
+                        triangleRasterizer.setShader(smoothColor::getColor);
+                        redraw();
+                        break;
+
+                    case KeyEvent.VK_3:
+                        triangleRasterizer.setShader(textureColor::getColor);
+                        redraw();
+                        break;
                 }
             }
         });
@@ -121,6 +142,7 @@ public class Controller {
 
     private void redraw() {
         canvas.clear();
+        // TODO vB.clear(): call Depth and Color buffer clear methods
 
         initObjects(canvas.getRaster());
 

@@ -20,7 +20,6 @@ public class Renderer3D {
     private LineRasterizer lineRasterizer;
     private int width;
     private int height;
-    private Mat4 view;
 
     public Renderer3D() {
 
