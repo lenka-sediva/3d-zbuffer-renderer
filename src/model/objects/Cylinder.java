@@ -1,99 +1,66 @@
 package model.objects;
 
-import model.objectdata.Part;
-import model.objectdata.Solid;
-import model.objectdata.TopologyType;
-import model.objectdata.Vertex;
-import transforms.Col;
-import transforms.Point3D;
+import model.objectdata.*;
+import transforms.*;
 
 public class Cylinder extends Solid {
 
     public Cylinder(Point3D center, double radius, double height, int segments) {
+        double halfHeight = height / 2.0;
 
-        int topCenterIndex;
-        int bottomCenterIndex;
+        // vertexy boční stěny
+        for (int i = 0; i <= segments; i++) {
+            double theta = 2 * Math.PI * i / segments;
+            double cos = Math.cos(theta);
+            double sin = Math.sin(theta);
 
-        double halfH = height / 2.0;
+            double x = radius * cos + center.getX();
+            double z = radius * sin + center.getZ();
 
-        // horní a dolní vrcholy kruhu
-        for (int i = 0; i < segments; i++) {
+            // normála pro boční vertexy
+            Vec3D normal = new Vec3D(cos, 0, sin)
+                    .normalized()
+                    .orElse(new Vec3D(0, 1, 0)); // fallback
 
-            double angle = 2 * Math.PI * i / segments;
+            // interpolace barvy podle normály
+            Col color = new Col(
+                    (int)((normal.getX() * 0.5 + 0.5) * 255),
+                    (int)((normal.getY() * 0.5 + 0.5) * 255),
+                    (int)((normal.getZ() * 0.5 + 0.5) * 255)
+            );
 
-            double x = radius * Math.cos(angle);
-            double y = radius * Math.sin(angle);
-
-            // horní kruh
+            // spodní a vrchní vertex pro segment
             vertexBuffer.add(new Vertex(
-                    new Point3D(center.getX() + x, center.getY() + y, center.getZ() + halfH),
-                    new Col(200,200,200)
+                    new Point3D(x, center.getY() - halfHeight, z),
+                    color, new Vec2D(i / (double)segments, 0), normal, 1.0
             ));
 
-            // dolní kruh
             vertexBuffer.add(new Vertex(
-                    new Point3D(center.getX() + x, center.getY() + y, center.getZ() - halfH),
-                    new Col(150,150,150)
+                    new Point3D(x, center.getY() + halfHeight, z),
+                    color, new Vec2D(i / (double)segments, 1), normal, 1.0
             ));
         }
 
-        // středy kruhů
-        topCenterIndex = vertexBuffer.size();
-        vertexBuffer.add(new Vertex(
-                new Point3D(center.getX(), center.getY(), center.getZ() + halfH),
-                new Col(255,0,0)
-        ));
-
-        bottomCenterIndex = vertexBuffer.size();
-        vertexBuffer.add(new Vertex(
-                new Point3D(center.getX(), center.getY(), center.getZ() - halfH),
-                new Col(0,255,0)
-        ));
-
-        int start = indexBuffer.size();
-
-        // boční plášť
+        // vytvoření indexů a partů
         for (int i = 0; i < segments; i++) {
+            int bottom1 = i * 2;
+            int top1 = bottom1 + 1;
+            int bottom2 = bottom1 + 2;
+            int top2 = bottom2 + 1;
 
-            int top1 = i * 2;
-            int bottom1 = i * 2 + 1;
-
-            int top2 = ( (i + 1) % segments ) * 2;
-            int bottom2 = ( (i + 1) % segments ) * 2 + 1;
-
-            // trojúhelník 1
-            indexBuffer.add(top1);
-            indexBuffer.add(bottom1);
-            indexBuffer.add(top2);
-
-            // trojúhelník 2
-            indexBuffer.add(top2);
+            // 1. trojúhelník
+            int start = indexBuffer.size();
             indexBuffer.add(bottom1);
             indexBuffer.add(bottom2);
+            indexBuffer.add(top1);
+            partBuffer.add(new Part(start, 3, TopologyType.TRIANGLE_LIST));
+
+            // 2. trojúhelník
+            start = indexBuffer.size();
+            indexBuffer.add(top1);
+            indexBuffer.add(bottom2);
+            indexBuffer.add(top2);
+            partBuffer.add(new Part(start, 3, TopologyType.TRIANGLE_LIST));
         }
-
-        // horní podstava
-        for (int i = 0; i < segments; i++) {
-
-            int v1 = i * 2;
-            int v2 = ((i + 1) % segments) * 2;
-
-            indexBuffer.add(topCenterIndex);
-            indexBuffer.add(v1);
-            indexBuffer.add(v2);
-        }
-
-        // dolní podstava
-        for (int i = 0; i < segments; i++) {
-
-            int v1 = i * 2 + 1;
-            int v2 = ((i + 1) % segments) * 2 + 1;
-
-            indexBuffer.add(bottomCenterIndex);
-            indexBuffer.add(v2);
-            indexBuffer.add(v1);
-        }
-
-        partBuffer.add(new Part(start, indexBuffer.size() - start, TopologyType.TRIANGLE_LIST));
     }
 }
