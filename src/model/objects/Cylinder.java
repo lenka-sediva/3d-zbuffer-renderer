@@ -5,7 +5,14 @@ import transforms.*;
 
 public class Cylinder extends Solid {
 
+    /**
+     * @param center střed válce
+     * @param radius poloměr
+     * @param height výška
+     * @param segments počet segmentů pro hladký vzhled (čím více, tím hladší)
+     */
     public Cylinder(Point3D center, double radius, double height, int segments) {
+        super("válec", "V");
         double halfHeight = height / 2.0;
 
         // vertexy boční stěny

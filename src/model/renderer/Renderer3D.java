@@ -20,6 +20,7 @@ public class Renderer3D {
     private LineRasterizer lineRasterizer;
     private int width;
     private int height;
+    private Mat4 proj;
 
     public Renderer3D() {
 
@@ -51,7 +52,7 @@ public class Renderer3D {
     public void renderSolid(Solid solid, Mat4 model, Camera view, Mat4 proj) {
         if(solid == null) return;
 
-        Mat4 mvp = model.mul(view.getViewMatrix()).mul(proj); // model * view * projection
+        Mat4 mvp = solid.getModelMatrix().mul(view.getViewMatrix()).mul(proj); // model * view * projection
 
         List<Vertex> vertices = new ArrayList<>();
         List<Integer> indices = solid.getIndexBuffer();
@@ -234,7 +235,10 @@ public class Renderer3D {
 
         return new Vertex(
                 new Point3D(x, y, z),
-                v.getColor()
+                v.getColor(),
+                v.getTexUV(),
+                v.getNormal(),
+                v.getOne()
         );
     }
 }

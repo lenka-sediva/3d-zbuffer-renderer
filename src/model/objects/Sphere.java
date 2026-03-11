@@ -6,14 +6,13 @@ import transforms.*;
 public class Sphere extends Solid {
 
     /**
-     * Vytvoří barevnou kouli s normálami a UV
-     *
      * @param center střed koule
      * @param radius poloměr
      * @param stacks počet horizontálních vrstev
      * @param slices počet vertikálních vrstev
      */
     public Sphere(Point3D center, double radius, int stacks, int slices) {
+        super("koule", "K");
 
         // generování vrcholů
         for (int i = 0; i <= stacks; i++) {

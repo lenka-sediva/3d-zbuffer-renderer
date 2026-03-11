@@ -10,6 +10,7 @@ import transforms.Point3D;
 public class Arrow extends Solid {
 
     public Arrow() {
+        super("šipka", "I");
 
         double z = -0.5;
 

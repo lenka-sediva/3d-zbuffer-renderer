@@ -10,6 +10,7 @@ import transforms.Point3D;
 public class Tetrahedron extends Solid {
 
     public Tetrahedron() {
+        super("čtyřstěn", "T");
 
         double zOffset = -0.1; // posun
 
