@@ -152,15 +152,15 @@ public class Renderer3D {
     // vytvoří nové Vertexy a pošle je do Rasterizeru
     private void clipZ(Vertex vA, Vertex vB, Vertex vC) {
         // protřídění všech Vertexů podle Z
-        if (vA.getPosition().getZ() < vB.getPosition().getZ()) {
+        if (vA.getZ() < vB.getZ()) {
             Vertex temp = vA; vA = vB; vB = temp;
         }
 
-        if(vB.getPosition().getZ() < vC.getPosition().getZ()) {
+        if(vB.getZ() < vC.getZ()) {
             Vertex temp = vB; vB = vC; vC = temp;
         }
 
-        if(vA.getPosition().getZ() < vB.getPosition().getZ()) {
+        if(vA.getZ() < vB.getZ()) {
             Vertex temp = vA; vA = vB; vB = temp;
         }
 
@@ -172,14 +172,13 @@ public class Renderer3D {
         // ořezání (vA = nejvzdálenější Vertex)
         // 1) trojúhelník je za pozorovatel, nic nevykreslujeme
         if(vA.getZ() < zMin) {
-            System.out.println("Trojuhelník je před kamerou, ale projdeme ho pro debug");
             return;
         }
 
         // 2) je vidět jen část, kreslíme trojúhelník
         if(vB.getZ() < zMin) {
-            double tAB = (zMin - vA.getPosition().getZ()) / (vB.getPosition().getZ() - vA.getPosition().getZ());
-            double tAC = (zMin - vA.getPosition().getZ()) / (vC.getPosition().getZ() - vA.getPosition().getZ());
+            double tAB = (zMin - vA.getZ()) / (vB.getZ() - vA.getZ());
+            double tAC = (zMin - vA.getZ()) / (vC.getZ() - vA.getZ());
 
             Vertex vD = Lerp.compute(vA, vB, tAB);
             Vertex vE = Lerp.compute(vA, vC, tAC);
@@ -191,8 +190,8 @@ public class Renderer3D {
 
         // 3) je vidět čtyřúhelník, triangulujeme na 2 trojúhelníky
         if(vC.getZ() < zMin) {
-            double tBC = (zMin - vB.getPosition().getZ()) / (vC.getPosition().getZ() - vB.getPosition().getZ());
-            double tAC = (zMin - vA.getPosition().getZ()) / (vC.getPosition().getZ() - vA.getPosition().getZ());
+            double tBC = (zMin - vB.getZ()) / (vC.getZ() - vB.getZ());
+            double tAC = (zMin - vA.getZ()) / (vC.getZ() - vA.getZ());
 
             // 2 vytvořené trojúhelníky, protože quad
             Vertex vD = Lerp.compute(vB, vC, tBC);

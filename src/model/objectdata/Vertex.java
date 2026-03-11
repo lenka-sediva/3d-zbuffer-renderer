@@ -104,6 +104,10 @@ public class Vertex implements Vectorizable<Vertex> {
         return new Vertex(position.mul(m), col, texUV, normal, one);
     }
 
+    public Vec2D getTextureCoordinates() {
+        return texUV.mul(1/one);
+    }
+
     @Override
     public String toString() {
         return "Vertex { " +
