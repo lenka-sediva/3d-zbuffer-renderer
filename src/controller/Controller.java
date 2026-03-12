@@ -21,7 +21,7 @@ public class Controller {
     private final TriangleRasterizer triangleRasterizer;
     private final LineRasterizer lineRasterizer;
 
-    private final Solid arrow, tetrahedron, sphere, cylinder, cube;
+    private final Solid arrow, tetrahedron, sphere, cylinder, cube, axis;
     private Solid currentObject;
     private final int currentObjectIndex = 0;
     private final List<Solid> solids;
@@ -31,7 +31,7 @@ public class Controller {
     private Mat4 model, persp, ortho;
     private enum ProjectionType { PERSPECTIVE, ORTHOGONAL }
     private ProjectionType currentProjection = ProjectionType.PERSPECTIVE;
-    private final FragmentShader constantColor, smoothColor, textureColor;
+    private final FragmentShader constantColor, smoothColor, grassTexture, woodTexture, uvTexture;
 
     public Controller(Canvas canvas) {
         this.canvas = canvas;
@@ -43,6 +43,7 @@ public class Controller {
         this.sphere = new Sphere(new Point3D(-1,2,0), 1.0, 20, 20);
         this.cylinder = new Cylinder(new Point3D(-5,0,0), 1.0, 2.0, 20);
         this.cube = new Cube(new Point3D(2, 0, 0), 1.0);
+        this.axis = new Axis();
         cube.setModelMatrix(new Mat4Rot(Math.toRadians(90), new Vec3D(1, 0, 0)));
 
         solids = new ArrayList<>();
@@ -51,6 +52,7 @@ public class Controller {
         solids.add(sphere);
         solids.add(cylinder);
         solids.add(cube);
+        solids.add(axis);
 
         canvas.setObjects(solids);
         currentObject = solids.get(currentObjectIndex);
@@ -61,7 +63,9 @@ public class Controller {
 
         constantColor = new ConstantColor();
         smoothColor = new SmoothColor();
-        textureColor = new TextureColor("res/mc_grass.jpg");
+        grassTexture = new TextureColor("res/mc_grass.jpg");
+        woodTexture = new TextureColor("res/plywood_diff_4k.jpg");
+        uvTexture = new TextureColor("res/uv_grid.jpg");
 
         for (Solid s : solids) {
             s.setShader(smoothColor);
@@ -76,7 +80,6 @@ public class Controller {
     private void initObjects(ColorBuffer raster) {
         vB.clear();
 
-        // šipka
         renderer.setTriangleRasterizer(triangleRasterizer);
         renderer.setLineRasterizer(lineRasterizer);
         renderer.setViewport(canvas.getWidth(), canvas.getHeight());
@@ -86,13 +89,14 @@ public class Controller {
         persp = new Mat4PerspRH(Math.toRadians(90), (double) canvas.getHeight() / canvas.getWidth(), 0.1, 100); // perspektivní matice projekce
         ortho = new Mat4OrthoRH(canvas.getWidth() / 100., canvas.getHeight() / 100., 0.1, 100); // ortogonální matice projekce
 
-        Mat4 usedProj = currentProjection == ProjectionType.PERSPECTIVE ? persp : ortho;
+        Mat4 proj = currentProjection == ProjectionType.PERSPECTIVE ? persp : ortho;
 
-        renderer.renderSolid(arrow, model, view, usedProj);
-        renderer.renderSolid(tetrahedron, model, view, usedProj);
-        renderer.renderSolid(sphere, model, view, usedProj);
-        renderer.renderSolid(cylinder, model, view, usedProj);
-        renderer.renderSolid(cube, model, view, usedProj);
+        renderer.renderSolid(arrow, model, view, proj);
+        renderer.renderSolid(tetrahedron, model, view, proj);
+        renderer.renderSolid(sphere, model, view, proj);
+        renderer.renderSolid(cylinder, model, view, proj);
+        renderer.renderSolid(cube, model, view, proj);
+        renderer.renderSolid(axis, model, view, proj);
     }
 
     private void initListeners(Canvas canvas) {
@@ -183,7 +187,9 @@ public class Controller {
 
                     case KeyEvent.VK_3:
                     case KeyEvent.VK_NUMPAD3:
-                        currentObject.setShader(textureColor);
+                        if (currentObject == cube) currentObject.setShader(grassTexture);
+                        if (currentObject == cylinder) currentObject.setShader(woodTexture);
+                        if (currentObject == sphere || currentObject == tetrahedron) currentObject.setShader(uvTexture);
                         redraw();
                         break;
 

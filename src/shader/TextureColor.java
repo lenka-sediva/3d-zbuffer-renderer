@@ -17,7 +17,6 @@ public class TextureColor implements FragmentShader {
     public TextureColor(String path) {
         try {
             texture = ImageIO.read(new File(path));
-            System.out.println("Textura načtena: " + texture.getWidth() + "x" + texture.getHeight());
         } catch (IOException e) {
             texture = new BufferedImage(1,1, BufferedImage.TYPE_INT_RGB);
             texture.setRGB(0, 0, Color.MAGENTA.getRGB());
@@ -27,7 +26,6 @@ public class TextureColor implements FragmentShader {
 
     @Override
     public Col getColor(Vertex vertex) {
-
         Vec2D textureCoord = vertex.getTextureCoordinates();
 
         double u = textureCoord.getX();

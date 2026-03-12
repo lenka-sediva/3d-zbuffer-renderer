@@ -180,9 +180,6 @@ public class Renderer3D {
         }
 
         double zMin = 0.01; // glitch kvůli double nepřesné hodnotě
-        // TODO zkusit jinou hodnotu (ne diskrétní), pokud trojúhelník glitchuje
-//        IO.println(0.1 + 0.2);
-//        IO.println(0.3);
 
         // ořezání (vA = nejvzdálenější Vertex)
         // 1) trojúhelník je za pozorovatel, nic nevykreslujeme
