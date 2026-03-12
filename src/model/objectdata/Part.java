@@ -1,9 +1,9 @@
 package model.objectdata;
 
 public class Part {
-    private int startIndex;
-    private int count;
-    private TopologyType topologyType;
+    private final int startIndex;
+    private final int count;
+    private final TopologyType topologyType;
 
     public Part(int startIndex, int count, TopologyType topologyType) {
         this.startIndex = startIndex;

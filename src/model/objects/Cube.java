@@ -107,7 +107,6 @@ public class Cube extends Solid {
     /**
      * Přidá stěnu jako 2 trojúhelníky (quad) od indexu base
      * Vertexy stěny jsou vždy 4 po sobě jdoucí: base, base+1, base+2, base+3
-     *
      *  3 --- 2
      *  |   / |
      *  |  /  |

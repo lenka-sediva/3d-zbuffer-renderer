@@ -2,9 +2,9 @@ package model.rasterdata;
 
 public class DepthBuffer implements Raster<Double>{
 
-    private double[][] depthBuffer;
-    private int width;
-    private int height;
+    private final double[][] depthBuffer;
+    private final int width;
+    private final int height;
 
     public DepthBuffer(int width, int height) {
         this.depthBuffer = new double[width][height];

@@ -29,12 +29,9 @@ public class Cylinder extends Solid {
                     .normalized()
                     .orElse(new Vec3D(0, 1, 0)); // fallback
 
-            // interpolace barvy podle normály
-            Col color = new Col(
-                    (int)((normal.getX() * 0.5 + 0.5) * 255),
-                    (int)((normal.getY() * 0.5 + 0.5) * 255),
-                    (int)((normal.getZ() * 0.5 + 0.5) * 255)
-            );
+            // odstíny zelené podle pozice na obvodu
+            double shade = cos * 0.5 + 0.5; // 0.0 - 1.0 podle úhlu
+            Col color = new Col(0.0, 0.2 + shade * 0.8, 0.0); // tmavě až světle zelená
 
             // spodní a vrchní vertex pro segment
             vertexBuffer.add(new Vertex(

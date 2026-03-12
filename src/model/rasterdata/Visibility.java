@@ -4,8 +4,8 @@ import transforms.Col;
 
 public class Visibility {
 
-    private ColorBuffer cB;
-    private DepthBuffer dB;
+    private final ColorBuffer cB;
+    private final DepthBuffer dB;
 
     public Visibility(ColorBuffer cB) {
         this.cB = cB;

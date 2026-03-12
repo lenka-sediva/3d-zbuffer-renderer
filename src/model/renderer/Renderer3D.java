@@ -10,7 +10,6 @@ import transforms.Mat4;
 import transforms.Point3D;
 import utilities.Lerp;
 
-import java.io.IO;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,26 +34,20 @@ public class Renderer3D {
         this.wireframe = wireframe;
     }
 
-    public boolean isWireframe() {
-        return wireframe;
-    }
-
-    public void renderSolids(List<Solid> solids, Mat4 model, Camera view, Mat4 proj) {
-        // TODO for each solid
-        // render Solid
-        if (solids == null) return;
-
-        for (Solid s : solids) {
-            renderSolid(s, model, view, proj);
-        }
-    }
-
     public void setTriangleRasterizer(TriangleRasterizer triangleRasterizer) {
         this.triangleRasterizer = triangleRasterizer;
     }
 
     public void setLineRasterizer(LineRasterizer lineRasterizer) {
         this.lineRasterizer = lineRasterizer;
+    }
+
+    public void renderSolids(List<Solid> solids, Mat4 model, Camera view, Mat4 proj) {
+        if (solids == null) return;
+
+        for (Solid s : solids) {
+            renderSolid(s, model, view, proj);
+        }
     }
 
     public void renderSolid(Solid solid, Mat4 model, Camera view, Mat4 proj) {
@@ -78,7 +71,7 @@ public class Renderer3D {
             vertices.add(v.transf(mvp));
         }
 
-        // frustum culling - rychlé ořezání, pokud všechny vrcholy jsou mimo view
+        // frustum culling = rychlé ořezání, pokud všechny vrcholy jsou mimo view
         if(isInView(vertices)) {
             for (Part part : parts) {
                 switch (part.getTopologyType()) {
@@ -127,8 +120,6 @@ public class Renderer3D {
                                 v3 = temp;
                             }
                             clipZ(v1, v2, v3);
-                            //start += 3;
-                            //triangleRasterizer.rasterize(v1, v2, v3);
                         }
                         break;
                 }
@@ -228,7 +219,7 @@ public class Renderer3D {
         // transformace do okna
         v1 = transformToWindow(v1);
         v2 = transformToWindow(v2);
-        v3 = transformToWindow(v3);;
+        v3 = transformToWindow(v3);
 
         // rasterizace (poslat do Rasterizer)
         if (wireframe) {

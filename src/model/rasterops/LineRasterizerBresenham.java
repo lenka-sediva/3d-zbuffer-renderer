@@ -1,6 +1,5 @@
 package model.rasterops;
 
-import model.rasterdata.ColorBuffer;
 import model.rasterdata.Visibility;
 
 /**

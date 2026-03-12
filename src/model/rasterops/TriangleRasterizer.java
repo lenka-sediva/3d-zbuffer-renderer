@@ -11,7 +11,7 @@ import java.util.function.Function;
 public class TriangleRasterizer {
     private final Visibility img;
     private Function<Vertex, Col> shader;
-    private BufferedImage texture;
+    private final BufferedImage texture;
 
     public TriangleRasterizer(Visibility img, Function<Vertex, Col> shader) {
         this.img = img;

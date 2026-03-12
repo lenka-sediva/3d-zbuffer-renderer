@@ -10,8 +10,10 @@ import java.util.List;
 public class Canvas extends JPanel {
     private final ColorBuffer raster;
     private List<Solid> solids;
-    private String currentObjectName = "šipka";
+    private String currentObjectName = "čtyřstěn";
     private String currentProjectionText = "Perspektivní projekce [P]";
+    private String currentMode = "Vyplněný model [M]";
+    private String currentCameraMode = "3. osoba [MEZERNÍK] ";
 
     public Canvas(int width, int height) {
         setPreferredSize(new Dimension(width, height));
@@ -24,6 +26,10 @@ public class Canvas extends JPanel {
         this.currentProjectionText = text;
     }
 
+    public void setCurrentMode(String mode) {
+        this.currentMode = mode;
+    }
+
     public void setCurrentObject(String name) {
         this.currentObjectName = name;
         repaint();
@@ -31,6 +37,11 @@ public class Canvas extends JPanel {
 
     public void setObjects(java.util.List<Solid> solids) {
         this.solids = solids;
+    }
+
+    public void setCurrentCameraMode(boolean firstPerson) {
+        this.currentCameraMode = firstPerson ? "1. osoba" : "3. osoba";
+        repaint();
     }
 
     @Override
@@ -63,8 +74,9 @@ public class Canvas extends JPanel {
             y += 25;
         }
 
-        // pravý dolní roh = projekce
+        // pravý dolní roh = model + projekce
         g.setColor(Color.WHITE);
+        g.drawString(currentMode, getWidth() - 160, getHeight() - 35);
         g.drawString(currentProjectionText, getWidth() - 200, getHeight() - 10);
 
         // pravý horní roh = pozorovatel
@@ -74,7 +86,7 @@ public class Canvas extends JPanel {
         g.drawString("[WASD] pohyb", getWidth() - 120, 50);
         g.drawString("[Q] vlevo, [E] vpravo", getWidth() - 160, 75);
         g.drawString("[SHIFT] nahoru, [CTRL] dolů", getWidth() - 225, 100);
-        //g.drawString(currentCameraMode + " [MEZERNÍK]", getWidth() - 170, 125);
+        g.drawString(currentCameraMode + " [MEZERNÍK]", getWidth() - 170, 125);
     }
 
     public ColorBuffer getRaster() {

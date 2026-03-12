@@ -6,8 +6,6 @@ import model.objectdata.TopologyType;
 import model.objectdata.Vertex;
 import transforms.Col;
 import transforms.Point3D;
-import transforms.Vec2D;
-import transforms.Vec3D;
 
 public class Arrow extends Solid {
 
@@ -15,7 +13,6 @@ public class Arrow extends Solid {
         super("šipka", "I");
 
         double z = -0.5;
-        Vec3D n = new Vec3D(0, 0, 1); // normála dopředu (šipka je plochá)
 
         // VERTEX BUFFER
         // střed (sdílený vrchol)
@@ -84,12 +81,5 @@ public class Arrow extends Solid {
         indexBuffer.add(0);
         indexBuffer.add(18);
         partBuffer.add(new Part(start, 2, TopologyType.LINE_LIST));
-    }
-
-    // pomocná metoda pro normalizaci pozice na UV
-    private static Vec2D toUV(double x, double y) {
-        double u = (x + 0.8) / 1.3;  // rozsah X: -0.8 až 0.5
-        double v = (y + 0.2) / 0.4;  // rozsah Y: -0.2 až 0.2
-        return new Vec2D(u, v);
     }
 }

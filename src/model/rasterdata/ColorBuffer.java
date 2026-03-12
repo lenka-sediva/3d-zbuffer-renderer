@@ -38,7 +38,6 @@ public class ColorBuffer implements Raster<Col> {
         img.setRGB(x, y, pixelValue.getRGB());
     }
 
-
     @Override
     public void clear() {
         Graphics g = img.getGraphics();

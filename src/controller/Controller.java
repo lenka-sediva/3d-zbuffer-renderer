@@ -21,9 +21,8 @@ public class Controller {
     private final TriangleRasterizer triangleRasterizer;
     private final LineRasterizer lineRasterizer;
 
-    private final Solid arrow, tetrahedron, sphere, cylinder, cube, axis;
+    private final Solid tetrahedron, sphere, cylinder, cube, axis;
     private Solid currentObject;
-    private final int currentObjectIndex = 0;
     private final List<Solid> solids;
 
     private final Renderer3D renderer;
@@ -31,6 +30,8 @@ public class Controller {
     private Mat4 model, persp, ortho;
     private enum ProjectionType { PERSPECTIVE, ORTHOGONAL }
     private ProjectionType currentProjection = ProjectionType.PERSPECTIVE;
+    private enum ModeType { SOLID, WIREFRAME }
+    private ModeType currentMode = ModeType.SOLID;
     private final FragmentShader constantColor, smoothColor, grassTexture, woodTexture, uvTexture;
 
     public Controller(Canvas canvas) {
@@ -38,7 +39,6 @@ public class Controller {
         this.vB = new Visibility(canvas.getRaster());
         this.renderer = new Renderer3D();
 
-        this.arrow = new Arrow();
         this.tetrahedron = new Tetrahedron();
         this.sphere = new Sphere(new Point3D(-1,2,0), 1.0, 20, 20);
         this.cylinder = new Cylinder(new Point3D(-5,0,0), 1.0, 2.0, 20);
@@ -47,15 +47,13 @@ public class Controller {
         cube.setModelMatrix(new Mat4Rot(Math.toRadians(90), new Vec3D(1, 0, 0)));
 
         solids = new ArrayList<>();
-        solids.add(arrow);
         solids.add(tetrahedron);
         solids.add(sphere);
         solids.add(cylinder);
         solids.add(cube);
-        solids.add(axis);
 
         canvas.setObjects(solids);
-        currentObject = solids.get(currentObjectIndex);
+        currentObject = solids.getFirst();
         currentObject.setSelected(true);
 
         this.triangleRasterizer = new TriangleRasterizer(vB, v -> v.getColor());
@@ -77,7 +75,7 @@ public class Controller {
         redraw();
     }
 
-    private void initObjects(ColorBuffer raster) {
+    private void initObjects() {
         vB.clear();
 
         renderer.setTriangleRasterizer(triangleRasterizer);
@@ -91,11 +89,8 @@ public class Controller {
 
         Mat4 proj = currentProjection == ProjectionType.PERSPECTIVE ? persp : ortho;
 
-        renderer.renderSolid(arrow, model, view, proj);
-        renderer.renderSolid(tetrahedron, model, view, proj);
-        renderer.renderSolid(sphere, model, view, proj);
-        renderer.renderSolid(cylinder, model, view, proj);
-        renderer.renderSolid(cube, model, view, proj);
+        // renderování všech objektů
+        renderer.renderSolids(solids, model, view, proj);
         renderer.renderSolid(axis, model, view, proj);
     }
 
@@ -163,12 +158,23 @@ public class Controller {
                         currentProjection = (currentProjection == ProjectionType.PERSPECTIVE)
                                 ? ProjectionType.ORTHOGONAL // ortogonální projekce (pravoúhlá) = vzdálenost od kamery nemění velikost objektu
                                 : ProjectionType.PERSPECTIVE; // perspektivní projekce (výchozí) = vzdálenější objekty se jeví menší
+                        canvas.setCurrentProjectionText(currentProjection == ProjectionType.PERSPECTIVE ?
+                                "Perspektivní projekce [P]" : " Ortogonální projekce [P]");
+                        redraw();
+                        break;
+
+                    // změna pohledu kamery = 1. a 3. osoba
+                    case KeyEvent.VK_SPACE:
+                        view = view.withFirstPerson(!view.getFirstPerson());
+                        canvas.setCurrentCameraMode(view.getFirstPerson());
                         redraw();
                         break;
 
                     // wireframe přepínání
                     case KeyEvent.VK_M:
-                        renderer.setWireframe(!renderer.isWireframe());
+                        currentMode = (currentMode == ModeType.SOLID) ? ModeType.WIREFRAME : ModeType.SOLID;
+                        renderer.setWireframe(currentMode == ModeType.WIREFRAME);
+                        canvas.setCurrentMode(currentMode == ModeType.WIREFRAME ? "   Drátový model [M]" : "Vyplněný model [M]");
                         redraw();
                         break;
 
@@ -204,10 +210,6 @@ public class Controller {
 
                     case KeyEvent.VK_U:
                         select(sphere, "koule");
-                        break;
-
-                    case KeyEvent.VK_I:
-                        select(arrow, "šipka");
                         break;
 
                     case KeyEvent.VK_K:
@@ -264,22 +266,19 @@ public class Controller {
         );
     }
     private void setSelectedObject(Solid obj) {
-        // zruší výběr předchozích objektů
-        for (Solid s : solids) {
-            s.setSelected(false);
+        if (currentObject != null) {
+            currentObject.setSelected(false);
         }
 
-        // označí nový objekt
-        obj.setSelected(true);
-
-        // aktualizuje currentObject
         currentObject = obj;
+        currentObject.setSelected(true);
     }
 
     // vybere objekt a předá jeho název do canvas
     private void select(Solid obj, String name) {
         setSelectedObject(obj);
         canvas.setCurrentObject(name);
+        redraw();
     }
 
     private void hardClear() {
@@ -293,14 +292,9 @@ public class Controller {
     }
 
     private void redraw() {
-        canvas.clear();
-        // TODO vB.clear(): call Depth and Color buffer clear methods
+        vB.clear();
 
-        initObjects(canvas.getRaster());
-
-        // aktualizace textu
-        canvas.setCurrentProjectionText(currentProjection == ProjectionType.PERSPECTIVE ?
-                "Perspektivní projekce [P]" : "Ortogonální projekce [P]");
+        initObjects();
 
         canvas.repaint();
     }
