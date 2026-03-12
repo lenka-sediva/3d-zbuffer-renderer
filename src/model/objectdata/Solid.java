@@ -1,5 +1,7 @@
 package model.objectdata;
 
+import shader.FragmentShader;
+import shader.SmoothColor;
 import transforms.Mat4;
 import transforms.Mat4Identity;
 import transforms.Vec3D;
@@ -13,6 +15,7 @@ public abstract class Solid {
     private Mat4 modelMatrix = new Mat4Identity();
     private final String name, shortcut;
     private boolean isSelected;
+    private FragmentShader shader = new SmoothColor();
 
     public Solid(String name, String shortcut) {
         this.name = name;
@@ -53,6 +56,14 @@ public abstract class Solid {
 
     public void setSelected(boolean isSelected) {
         this.isSelected = isSelected;
+    }
+
+    public void setShader(FragmentShader shader) {
+        this.shader = shader;
+    }
+
+    public FragmentShader getShader() {
+        return shader;
     }
 
     // vypočítá střed objektu pro správný scale

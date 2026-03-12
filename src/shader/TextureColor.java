@@ -17,28 +17,32 @@ public class TextureColor implements FragmentShader {
     public TextureColor(String path) {
         try {
             texture = ImageIO.read(new File(path));
+            System.out.println("Textura načtena: " + texture.getWidth() + "x" + texture.getHeight());
         } catch (IOException e) {
             texture = new BufferedImage(1,1, BufferedImage.TYPE_INT_RGB);
             texture.setRGB(0, 0, Color.MAGENTA.getRGB());
-            IO.println(e.getMessage());
+            System.out.println("CHYBA načítání textury: " + e.getMessage());
         }
     }
 
     @Override
     public Col getColor(Vertex vertex) {
+
         Vec2D textureCoord = vertex.getTextureCoordinates();
 
-        // 0-1
         double u = textureCoord.getX();
         double v = textureCoord.getY();
 
-        // 0-255 * 0-255
-        u = u * (texture.getWidth() - 1);
-        v = v * (texture.getHeight() - 1);
+        // clamp
+        u = Math.max(0, Math.min(1, u));
+        v = Math.max(0, Math.min(1, v));
 
-        // int texX = (int) Math.max(0, Math.min(texture.getWidth() - 1, u));
-        // int texY = (int) Math.max(0, Math.min(texture.getHeight() - 1, v));
+        // otočení Y
+        v = 1 - v;
 
-        return new Col(texture.getRGB((int)u, (int)v));
+        int texX = (int)(u * (texture.getWidth()  - 1));
+        int texY = (int)(v * (texture.getHeight() - 1));
+
+        return new Col(texture.getRGB(texX, texY));
     }
 }

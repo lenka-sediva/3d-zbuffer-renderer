@@ -21,17 +21,17 @@ public class Controller {
     private final TriangleRasterizer triangleRasterizer;
     private final LineRasterizer lineRasterizer;
 
-    private final Solid arrow, tetrahedron, sphere, cylinder;
+    private final Solid arrow, tetrahedron, sphere, cylinder, cube;
     private Solid currentObject;
-    private int currentObjectIndex = 0;
-    private List<Solid> solids;
+    private final int currentObjectIndex = 0;
+    private final List<Solid> solids;
 
     private final Renderer3D renderer;
     private Camera view;
-    private Mat4 model, proj, persp, ortho;
-    private enum ProjectionType { PERSPECTIVE, ORTHOGONAL };
+    private Mat4 model, persp, ortho;
+    private enum ProjectionType { PERSPECTIVE, ORTHOGONAL }
     private ProjectionType currentProjection = ProjectionType.PERSPECTIVE;
-    private FragmentShader constantColor, smoothColor, textureColor;
+    private final FragmentShader constantColor, smoothColor, textureColor;
 
     public Controller(Canvas canvas) {
         this.canvas = canvas;
@@ -42,12 +42,15 @@ public class Controller {
         this.tetrahedron = new Tetrahedron();
         this.sphere = new Sphere(new Point3D(-1,2,0), 1.0, 20, 20);
         this.cylinder = new Cylinder(new Point3D(-5,0,0), 1.0, 2.0, 20);
+        this.cube = new Cube(new Point3D(2, 0, 0), 1.0);
+        cube.setModelMatrix(new Mat4Rot(Math.toRadians(90), new Vec3D(1, 0, 0)));
 
         solids = new ArrayList<>();
         solids.add(arrow);
         solids.add(tetrahedron);
         solids.add(sphere);
         solids.add(cylinder);
+        solids.add(cube);
 
         canvas.setObjects(solids);
         currentObject = solids.get(currentObjectIndex);
@@ -55,6 +58,14 @@ public class Controller {
 
         this.triangleRasterizer = new TriangleRasterizer(vB, v -> v.getColor());
         this.lineRasterizer = new LineRasterizerBresenham(vB);
+
+        constantColor = new ConstantColor();
+        smoothColor = new SmoothColor();
+        textureColor = new TextureColor("res/mc_grass.jpg");
+
+        for (Solid s : solids) {
+            s.setShader(smoothColor);
+        }
 
         view = new Camera(new Vec3D(0, 0, 0), Math.PI * 1.25, Math.PI * -0.125, 3, false);
 
@@ -75,18 +86,13 @@ public class Controller {
         persp = new Mat4PerspRH(Math.toRadians(90), (double) canvas.getHeight() / canvas.getWidth(), 0.1, 100); // perspektivní matice projekce
         ortho = new Mat4OrthoRH(canvas.getWidth() / 100., canvas.getHeight() / 100., 0.1, 100); // ortogonální matice projekce
 
-        constantColor = new ConstantColor();
-        smoothColor = new SmoothColor();
-        textureColor = new TextureColor("res/mc_grass.jpg");
-
-        triangleRasterizer.setShader(smoothColor::getColor);
-
         Mat4 usedProj = currentProjection == ProjectionType.PERSPECTIVE ? persp : ortho;
 
         renderer.renderSolid(arrow, model, view, usedProj);
         renderer.renderSolid(tetrahedron, model, view, usedProj);
         renderer.renderSolid(sphere, model, view, usedProj);
         renderer.renderSolid(cylinder, model, view, usedProj);
+        renderer.renderSolid(cube, model, view, usedProj);
     }
 
     private void initListeners(Canvas canvas) {
@@ -156,19 +162,28 @@ public class Controller {
                         redraw();
                         break;
 
+                    // wireframe přepínání
+                    case KeyEvent.VK_M:
+                        renderer.setWireframe(!renderer.isWireframe());
+                        redraw();
+                        break;
+
                     // shadery
                     case KeyEvent.VK_1:
-                        triangleRasterizer.setShader(constantColor::getColor);
+                    case KeyEvent.VK_NUMPAD1:
+                        currentObject.setShader(constantColor);
                         redraw();
                         break;
 
                     case KeyEvent.VK_2:
-                        triangleRasterizer.setShader(smoothColor::getColor);
+                    case KeyEvent.VK_NUMPAD2:
+                        currentObject.setShader(smoothColor);
                         redraw();
                         break;
 
                     case KeyEvent.VK_3:
-                        triangleRasterizer.setShader(textureColor::getColor);
+                    case KeyEvent.VK_NUMPAD3:
+                        currentObject.setShader(textureColor);
                         redraw();
                         break;
 
@@ -181,7 +196,7 @@ public class Controller {
                         select(cylinder, "válec");
                         break;
 
-                    case KeyEvent.VK_K:
+                    case KeyEvent.VK_U:
                         select(sphere, "koule");
                         break;
 
@@ -189,16 +204,20 @@ public class Controller {
                         select(arrow, "šipka");
                         break;
 
+                    case KeyEvent.VK_K:
+                        select(cube, "krychle");
+                        break;
+
                     // rotace
-                    case KeyEvent.VK_X: rotateSelected(Math.toRadians(10), new Vec3D(1,0,0)); break;
-                    case KeyEvent.VK_Y: rotateSelected(Math.toRadians(10), new Vec3D(0,1,0)); break;
-                    case KeyEvent.VK_Z: rotateSelected(Math.toRadians(10), new Vec3D(0,0,1)); break;
+                    case KeyEvent.VK_X: rotateSelected(Math.toRadians(90), new Vec3D(1,0,0)); break;
+                    case KeyEvent.VK_Y: rotateSelected(Math.toRadians(90), new Vec3D(0,1,0)); break;
+                    case KeyEvent.VK_Z: rotateSelected(Math.toRadians(90), new Vec3D(0,0,1)); break;
 
                     // translace
-                    case KeyEvent.VK_LEFT: moveSelected(-0.1,0,0); break;
-                    case KeyEvent.VK_RIGHT: moveSelected(0.1,0,0); break;
-                    case KeyEvent.VK_UP: moveSelected(0,0.1,0); break;
-                    case KeyEvent.VK_DOWN: moveSelected(0,-0.1,0); break;
+                    case KeyEvent.VK_LEFT: moveSelected(-0.1,0); break;
+                    case KeyEvent.VK_RIGHT: moveSelected(0.1,0); break;
+                    case KeyEvent.VK_UP: moveSelected(0,0.1); break;
+                    case KeyEvent.VK_DOWN: moveSelected(0,-0.1); break;
 
                     // scale
                     case KeyEvent.VK_PLUS:
@@ -220,18 +239,13 @@ public class Controller {
     }
 
     // posune objekt o x, y, z
-    private void moveSelected(double x, double y, double z) {
-        transformSelected(new Mat4Transl(x, y, z));
+    private void moveSelected(double x, double y) {
+        transformSelected(new Mat4Transl(x, y, 0));
     }
 
     // natočení kolem osy podle vektoru
     private void rotateSelected(double angleRad, Vec3D axis) {
-        Vec3D center = currentObject.getCenter();
-        transformSelected(
-                new Mat4Transl(center.opposite()) // přesun do středu
-                        .mul(new Mat4Rot(angleRad, axis)) // rotace
-                        .mul(new Mat4Transl(center))      // zpět
-        );
+        transformSelected(new Mat4Rot(angleRad, axis));
     }
 
     // škálování kolem středu objektu

@@ -3,17 +3,20 @@ package model.rasterops;
 import model.objectdata.Vertex;
 import model.rasterdata.Visibility;
 import transforms.Col;
+import transforms.Vec2D;
 
+import java.awt.image.BufferedImage;
 import java.util.function.Function;
 
 public class TriangleRasterizer {
-
     private final Visibility img;
     private Function<Vertex, Col> shader;
+    private BufferedImage texture;
 
     public TriangleRasterizer(Visibility img, Function<Vertex, Col> shader) {
         this.img = img;
         this.shader = shader;
+        this.texture = null;
     }
 
     public void setShader(Function<Vertex, Col> shader) {
@@ -29,105 +32,102 @@ public class TriangleRasterizer {
         Col colB = vB.getColor();
         Col colC = vC.getColor();
 
-        // seřazení podle Y
-        if (ay > by) {
-            double tx=ax; ax=bx; bx=tx;
-            double ty=ay; ay=by; by=ty;
-            double tz=az; az=bz; bz=tz;
-            Col tc=colA; colA=colB; colB=tc;
-        }
+        // perspektivně korektní interpolace texturovacích souřadnic:
+        // interpolace getTexUV() (= uv/w) a getOne() (= 1/w) zvlášť
+        Vec2D uvA = vA.getTexUV();
+        Vec2D uvB = vB.getTexUV();
+        Vec2D uvC = vC.getTexUV();
 
-        if (by > cy) {
-            double tx=bx; bx=cx; cx=tx;
-            double ty=by; by=cy; cy=ty;
-            double tz=bz; bz=cz; cz=tz;
-            Col tc=colB; colB=colC; colC=tc;
-        }
+        double oneA = vA.getOne();
+        double oneB = vB.getOne();
+        double oneC = vC.getOne();
 
-        if (ay > by) {
-            double tx=ax; ax=bx; bx=tx;
-            double ty=ay; ay=by; by=ty;
-            double tz=az; az=bz; bz=tz;
-            Col tc=colA; colA=colB; colB=tc;
-        }
+//        System.out.println("oneA=" + oneA + " oneB=" + oneB + " oneC=" + oneC);
+//        System.out.println("uvA=" + uvA + " uvB=" + uvB + " uvC=" + uvC);
 
-        int yStart = (int)Math.ceil(ay);
-        int yMiddle = (int)Math.ceil(by);
-        int yEnd = (int)Math.ceil(cy);
+        // bounding box oříznutý na rozměry obrazu
+        int minX = Math.max((int) Math.floor(Math.min(ax, Math.min(bx, cx))), 0);
+        int maxX = Math.min((int) Math.ceil (Math.max(ax, Math.max(bx, cx))), img.getWidth()  - 1);
+        int minY = Math.max((int) Math.floor(Math.min(ay, Math.min(by, cy))), 0);
+        int maxY = Math.min((int) Math.ceil (Math.max(ay, Math.max(by, cy))), img.getHeight() - 1);
 
-        yStart = Math.max(yStart, 0);
-        yEnd = Math.min(yEnd, img.getHeight()-1);
+        // znaménková plocha trojúhelníku
+        double areaABC = edgeFunction(ax, ay, bx, by, cx, cy);
 
-        // HORNÍ část trojúhelníku
-        for (int y = yStart; y < yMiddle; y++) {
+        // degenerovaný trojúhelník
+        if (Math.abs(areaABC) < 1e-10) return;
 
-            if (y < 0 || y >= img.getHeight()) continue;
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
 
-            double tAB = (by - ay) != 0 ? (y - ay) / (by - ay) : 0;
-            double tAC = (cy - ay) != 0 ? (y - ay) / (cy - ay) : 0;
+                // střed pixelu pro přesnější testování a interpolaci
+                double px = x + 0.5, py = y + 0.5;
 
-            double xAB = ax + tAB * (bx - ax);
-            double zAB = az + tAB * (bz - az);
-            Col colAB = colA.mul(1 - tAB).add(colB.mul(tAB));
+                double wA = edgeFunction(bx, by, cx, cy, px, py) / areaABC;
+                double wB = edgeFunction(cx, cy, ax, ay, px, py) / areaABC;
+                double wC = edgeFunction(ax, ay, bx, by, px, py) / areaABC;
 
-            double xAC = ax + tAC * (cx - ax);
-            double zAC = az + tAC * (cz - az);
-            Col colAC = colA.mul(1 - tAC).add(colC.mul(tAC));
+                // pixel musí ležet uvnitř trojúhelníku
+                if (wA < 0 || wB < 0 || wC < 0) continue;
 
-            if (xAB > xAC) {
-                double tx=xAB; xAB=xAC; xAC=tx;
-                double tz=zAB; zAB=zAC; zAC=tz;
-                Col tc=colAB; colAB=colAC; colAC=tc;
-            }
+                // interpolace Z
+                double z = wA * az + wB * bz + wC * cz;
 
-            int xStart = Math.max((int)Math.ceil(xAB), 0);
-            int xEnd = Math.min((int)Math.floor(xAC), img.getWidth()-1);
+                // lineární interpolace barvy vrcholů
+                Col col = colA.mul(wA).add(colB.mul(wB)).add(colC.mul(wC));
 
-            for (int x = xStart; x <= xEnd; x++) {
+                // perspektivně korektní interpolace 1/w a uv/w
+                double oneInterp = wA * oneA + wB * oneB + wC * oneC;
 
-                double t = (xAC - xAB) != 0 ? (x - xAB) / (xAC - xAB) : 0;
+                double uInterp = wA * uvA.getX() + wB * uvB.getX() + wC * uvC.getX();
+                double vInterp = wA * uvA.getY() + wB * uvB.getY() + wC * uvC.getY();
 
-                double z = zAB + t * (zAC - zAB);
-                Col col = colAB.mul(1 - t).add(colAC.mul(t));
+                // výsledné UV
+                double u = oneInterp != 0 ? uInterp / oneInterp : 0;
+                double v = oneInterp != 0 ? vInterp / oneInterp : 0;
 
+                // texturování (interní textura rasterizéru)
+                if (texture != null) {
+                    double uw = u - Math.floor(u); // wrapping
+                    double vw = v - Math.floor(v);
+
+                    int tx = (int)(uw * (texture.getWidth()  - 1));
+                    int ty = (int)(vw * (texture.getHeight() - 1));
+
+                    int rgb = texture.getRGB(tx, ty);
+                    double r = ((rgb >> 16) & 0xFF) / 255.0;
+                    double g = ((rgb >>  8) & 0xFF) / 255.0;
+                    double b = ((rgb      ) & 0xFF) / 255.0;
+
+                    col = col.mul(new Col(r, g, b));
+                }
+
+                // shader dostane vertex s UV
+                if (shader != null) {
+                    Vertex interpolated = new Vertex(
+                            vA.getPosition().mul(wA)
+                                    .add(vB.getPosition().mul(wB))
+                                    .add(vC.getPosition().mul(wC)),
+                            col,
+                            new Vec2D(u, v), // UV
+                            vA.getNormal().mul(wA).add(vB.getNormal().mul(wB)).add(vC.getNormal().mul(wC)),
+                            1.0
+                    );
+                    col = shader.apply(interpolated);
+                }
                 img.setPixelWithZTest(x, y, z, col);
             }
         }
+    }
 
-        // DOLNÍ část trojúhelníku
-        for (int y = yMiddle; y <= yEnd; y++) {
-
-            if (y < 0 || y >= img.getHeight()) continue;
-
-            double tBC = (cy - by) != 0 ? (y - by) / (cy - by) : 0;
-            double tAC = (cy - ay) != 0 ? (y - ay) / (cy - ay) : 0;
-
-            double xBC = bx + tBC * (cx - bx);
-            double zBC = bz + tBC * (cz - bz);
-            Col colBC = colB.mul(1 - tBC).add(colC.mul(tBC));
-
-            double xAC = ax + tAC * (cx - ax);
-            double zAC = az + tAC * (cz - az);
-            Col colAC = colA.mul(1 - tAC).add(colC.mul(tAC));
-
-            if (xBC > xAC) {
-                double tx=xBC; xBC=xAC; xAC=tx;
-                double tz=zBC; zBC=zAC; zAC=tz;
-                Col tc=colBC; colBC=colAC; colAC=tc;
-            }
-
-            int xStart = Math.max((int)Math.ceil(xBC), 0);
-            int xEnd = Math.min((int)Math.floor(xAC), img.getWidth()-1);
-
-            for (int x = xStart; x <= xEnd; x++) {
-
-                double t = (xAC - xBC) != 0 ? (x - xBC) / (xAC - xBC) : 0;
-
-                double z = zBC + t * (zAC - zBC);
-                Col col = colBC.mul(1 - t).add(colAC.mul(t));
-
-                img.setPixelWithZTest(x, y, z, col);
-            }
-        }
+    /**
+     * 2D cross product hrany AB vůči bodu P
+     * Kladné = P leží vlevo od AB (stejná orientace jako zbytek trojúhelníku)
+     */
+    private static double edgeFunction(
+            double ax, double ay,
+            double bx, double by,
+            double px, double py) {
+        return (bx - ax) * (py - ay) - (by - ay) * (px - ax);
     }
 }

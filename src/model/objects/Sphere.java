@@ -12,7 +12,7 @@ public class Sphere extends Solid {
      * @param slices počet vertikálních vrstev
      */
     public Sphere(Point3D center, double radius, int stacks, int slices) {
-        super("koule", "K");
+        super("koule", "U");
 
         // generování vrcholů
         for (int i = 0; i <= stacks; i++) {

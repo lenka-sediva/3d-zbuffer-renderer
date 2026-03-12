@@ -20,7 +20,7 @@ public class Renderer3D {
     private LineRasterizer lineRasterizer;
     private int width;
     private int height;
-    private Mat4 proj;
+    private boolean wireframe = false;
 
     public Renderer3D() {
 
@@ -29,6 +29,14 @@ public class Renderer3D {
     public void setViewport(int width, int height) {
         this.width = width;
         this.height = height;
+    }
+
+    public void setWireframe(boolean wireframe) {
+        this.wireframe = wireframe;
+    }
+
+    public boolean isWireframe() {
+        return wireframe;
     }
 
     public void renderSolids(List<Solid> solids, Mat4 model, Camera view, Mat4 proj) {
@@ -51,6 +59,13 @@ public class Renderer3D {
 
     public void renderSolid(Solid solid, Mat4 model, Camera view, Mat4 proj) {
         if(solid == null) return;
+
+        // nastavení shaderu podle objektu
+        if (solid.getShader() != null) {
+            triangleRasterizer.setShader(solid.getShader()::getColor);
+        } else {
+            triangleRasterizer.setShader(v -> v.getColor()); // fallback = barva vrcholu
+        }
 
         Mat4 mvp = solid.getModelMatrix().mul(view.getViewMatrix()).mul(proj); // model * view * projection
 
@@ -219,13 +234,15 @@ public class Renderer3D {
         v3 = transformToWindow(v3);;
 
         // rasterizace (poslat do Rasterizer)
-        // 1x triangleRasterizer - pro plochu trojuhelnika
-        triangleRasterizer.rasterize(v1, v2, v3);
-
-        // 3x lineRasterizer - pro hrany trojuhelnika
-//        lineRasterizer.rasterize(v1, v2);
-//        lineRasterizer.rasterize(v2, v3);
-//        lineRasterizer.rasterize(v3, v1);
+        if (wireframe) {
+            // drátový model = pouze hrany trojúhelníka
+            lineRasterizer.rasterize(v1, v2);
+            lineRasterizer.rasterize(v2, v3);
+            lineRasterizer.rasterize(v3, v1);
+        } else {
+            // normání render = pro plochu trojuhelnika
+            triangleRasterizer.rasterize(v1, v2, v3);
+        }
     }
 
     private Vertex transformToWindow(Vertex v) {
