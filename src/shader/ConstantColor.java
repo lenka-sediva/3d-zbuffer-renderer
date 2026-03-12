@@ -4,10 +4,10 @@ import model.objectdata.Vertex;
 import transforms.Col;
 
 public class ConstantColor implements FragmentShader {
-    private Col color;
+    private final Col color;
 
     public ConstantColor() {
-        this.color = new Col(0xFF0000);
+        this.color = new Col(0xFF0000); // červená
     }
 
     public ConstantColor(Col color) {
@@ -18,5 +18,4 @@ public class ConstantColor implements FragmentShader {
     public Col getColor(Vertex v) {
         return color;
     }
-
 }

@@ -34,6 +34,10 @@ public class Controller {
     private ModeType currentMode = ModeType.SOLID;
     private final FragmentShader constantColor, smoothColor, grassTexture, woodTexture, uvTexture;
 
+    // Phong a světlo
+    private final Light light;
+    private final Solid lightSphere;
+
     public Controller(Canvas canvas) {
         this.canvas = canvas;
         this.vB = new Visibility(canvas.getRaster());
@@ -71,6 +75,19 @@ public class Controller {
 
         view = new Camera(new Vec3D(0, 0, 0), Math.PI * 1.25, Math.PI * -0.125, 3, false);
 
+        // Phong
+        light = new Light(new Point3D(0, 0, 2), new Col(1.0, 1.0, 1.0), 0.5);
+        lightSphere = new Sphere(light.getPosition(), 0.25, 10, 10);
+        lightSphere.setShader(new ConstantColor(light.getColor())); // koule svítí barvou světla
+
+        canvas.setLightSphere(lightSphere);
+
+        // nastavění Phongova shaderu, aby šlo vidět osvětlení i na textuře
+        tetrahedron.setShader(new PhongColor(light));
+        sphere.setShader(new PhongColor(light));
+        cylinder.setShader(new PhongColor(light));
+        cube.setShader(new PhongColor(light));
+
         initListeners(canvas);
         redraw();
     }
@@ -92,6 +109,7 @@ public class Controller {
         // renderování všech objektů
         renderer.renderSolids(solids, model, view, proj);
         renderer.renderSolid(axis, model, view, proj);
+        renderer.renderSolid(lightSphere, model, view, proj);
     }
 
     private void initListeners(Canvas canvas) {
@@ -181,21 +199,21 @@ public class Controller {
                     // shadery
                     case KeyEvent.VK_1:
                     case KeyEvent.VK_NUMPAD1:
-                        currentObject.setShader(constantColor);
+                        setSurface(constantColor);
                         redraw();
                         break;
 
                     case KeyEvent.VK_2:
                     case KeyEvent.VK_NUMPAD2:
-                        currentObject.setShader(smoothColor);
+                        setSurface(smoothColor);
                         redraw();
                         break;
 
                     case KeyEvent.VK_3:
                     case KeyEvent.VK_NUMPAD3:
-                        if (currentObject == cube) currentObject.setShader(grassTexture);
-                        if (currentObject == cylinder) currentObject.setShader(woodTexture);
-                        if (currentObject == sphere || currentObject == tetrahedron) currentObject.setShader(uvTexture);
+                        if (currentObject == cube) setSurface(grassTexture);
+                        if (currentObject == cylinder) setSurface(woodTexture);
+                        if (currentObject == sphere || currentObject == tetrahedron) setSurface(uvTexture);
                         redraw();
                         break;
 
@@ -214,6 +232,10 @@ public class Controller {
 
                     case KeyEvent.VK_K:
                         select(cube, "krychle");
+                        break;
+
+                    case KeyEvent.VK_L:
+                        select(lightSphere, "světlo");
                         break;
 
                     // rotace
@@ -249,6 +271,15 @@ public class Controller {
     // posune objekt o x, y, z
     private void moveSelected(double x, double y) {
         transformSelected(new Mat4Transl(x, y, 0));
+
+        // pokud posouváme světlo, aktualizuj jeho pozici
+        if (currentObject == lightSphere) {
+            light.setPosition(new Point3D(
+                    light.getPosition().getX() + x,
+                    light.getPosition().getY() + y,
+                    light.getPosition().getZ()
+            ));
+        }
     }
 
     // natočení kolem osy podle vektoru
@@ -279,6 +310,14 @@ public class Controller {
         setSelectedObject(obj);
         canvas.setCurrentObject(name);
         redraw();
+    }
+
+    // pro Phongův shader nastaví povrchový shader (textura nebo barva)
+    private void setSurface(FragmentShader surface) {
+        if (currentObject != null && currentObject.getShader() instanceof PhongColor) {
+            ((PhongColor) currentObject.getShader()).setSurfaceShader(surface);
+            redraw();
+        }
     }
 
     private void hardClear() {

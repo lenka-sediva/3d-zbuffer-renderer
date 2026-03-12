@@ -21,9 +21,7 @@ public class Renderer3D {
     private int height;
     private boolean wireframe = false;
 
-    public Renderer3D() {
-
-    }
+    public Renderer3D() {}
 
     public void setViewport(int width, int height) {
         this.width = width;
@@ -44,14 +42,13 @@ public class Renderer3D {
 
     public void renderSolids(List<Solid> solids, Mat4 model, Camera view, Mat4 proj) {
         if (solids == null) return;
-
         for (Solid s : solids) {
             renderSolid(s, model, view, proj);
         }
     }
 
     public void renderSolid(Solid solid, Mat4 model, Camera view, Mat4 proj) {
-        if(solid == null) return;
+        if (solid == null) return;
 
         // nastavení shaderu podle objektu
         if (solid.getShader() != null) {
@@ -60,28 +57,31 @@ public class Renderer3D {
             triangleRasterizer.setShader(v -> v.getColor()); // fallback = barva vrcholu
         }
 
-        Mat4 mvp = solid.getModelMatrix().mul(view.getViewMatrix()).mul(proj); // model * view * projection
+        Mat4 modelMatrix = solid.getModelMatrix();
+        Mat4 mvp = modelMatrix.mul(view.getViewMatrix()).mul(proj); // model * view * projection
 
-        List<Vertex> vertices = new ArrayList<>();
+        List<Vertex> verticesClip  = new ArrayList<>(); // clip space = pro rasterizaci a Z-buffer
+        List<Vertex> verticesWorld = new ArrayList<>(); // world space = pro Phong (normály, pozice)
+
+        for (Vertex v : solid.getVertexBuffer()) {
+            verticesClip.add(v.transf(mvp));         // pozice do clip space
+            verticesWorld.add(v.transf(modelMatrix)); // pozice + normála do world space
+        }
+
         List<Integer> indices = solid.getIndexBuffer();
         List<Part> parts = solid.getPartBuffer();
 
-        // transformace všech Vertexů do clip space
-        for(Vertex v : solid.getVertexBuffer()) {
-            vertices.add(v.transf(mvp));
-        }
-
         // frustum culling = rychlé ořezání, pokud všechny vrcholy jsou mimo view
-        if(isInView(vertices)) {
+        if (isInView(verticesClip)) {
             for (Part part : parts) {
                 switch (part.getTopologyType()) {
                     case LINE_LIST:
                         for (int i = 0; i < part.getCount(); i += 2) {
-                            int index1 = indices.get(part.getStartIndex() + i);
-                            int index2 = indices.get(part.getStartIndex() + i + 1);
+                            int i1 = indices.get(part.getStartIndex() + i);
+                            int i2 = indices.get(part.getStartIndex() + i + 1);
 
-                            Vertex v1 = vertices.get(index1).dehomog().orElse(vertices.get(index1));
-                            Vertex v2 = vertices.get(index2).dehomog().orElse(vertices.get(index2));
+                            Vertex v1 = verticesClip.get(i1).dehomog().orElse(verticesClip.get(i1));
+                            Vertex v2 = verticesClip.get(i2).dehomog().orElse(verticesClip.get(i2));
 
                             v1 = transformToWindow(v1);
                             v2 = transformToWindow(v2);
@@ -92,34 +92,38 @@ public class Renderer3D {
 
                     case TRIANGLE_LIST:
                         for (int i = 0; i < part.getCount(); i += 3) {
-                            int index1 = indices.get(part.getStartIndex() + i);
-                            int index2 = indices.get(part.getStartIndex() + i + 1);
-                            int index3 = indices.get(part.getStartIndex() + i + 2);
+                            int i1 = indices.get(part.getStartIndex() + i);
+                            int i2 = indices.get(part.getStartIndex() + i + 1);
+                            int i3 = indices.get(part.getStartIndex() + i + 2);
 
                             clipZ(
-                                    vertices.get(index1),
-                                    vertices.get(index2),
-                                    vertices.get(index3)
+                                    verticesClip.get(i1),  verticesClip.get(i2),  verticesClip.get(i3),
+                                    verticesWorld.get(i1), verticesWorld.get(i2), verticesWorld.get(i3)
                             );
                         }
                         break;
 
                     case TRIANGLE_STRIP:
                         for (int i = 0; i < part.getCount() - 2; i++) {
-                            int index1 = indices.get(part.getStartIndex() + i);
-                            int index2 = indices.get(part.getStartIndex() + i + 1);
-                            int index3 = indices.get(part.getStartIndex() + i + 2);
+                            int i1 = indices.get(part.getStartIndex() + i);
+                            int i2 = indices.get(part.getStartIndex() + i + 1);
+                            int i3 = indices.get(part.getStartIndex() + i + 2);
 
-                            Vertex v1 = vertices.get(index1);
-                            Vertex v2 = vertices.get(index2);
-                            Vertex v3 = vertices.get(index3);
+                            Vertex c1 = verticesClip.get(i1);
+                            Vertex c2 = verticesClip.get(i2);
+                            Vertex c3 = verticesClip.get(i3);
 
+                            Vertex w1 = verticesWorld.get(i1);
+                            Vertex w2 = verticesWorld.get(i2);
+                            Vertex w3 = verticesWorld.get(i3);
+
+                            // střídání pořadí vrcholů pro správnou orientaci
                             if (i % 2 == 0) {
-                                Vertex temp = v2;
-                                v2 = v3;
-                                v3 = temp;
+                                Vertex tmp = c2; c2 = c3; c3 = tmp;
+                                Vertex tmpW = w2; w2 = w3; w3 = tmpW;
                             }
-                            clipZ(v1, v2, v3);
+
+                            clipZ(c1, c2, c3, w1, w2, w3);
                         }
                         break;
                 }
@@ -144,92 +148,86 @@ public class Renderer3D {
 
             if (x >= -w) allLeft = false;
             if (x <=  w) allRight = false;
-
             if (y >= -w) allUp = false;
             if (y <=  w) allDown = false;
-
-            if (z >= 0) allFar = false;
-            if (z <= w) allBehind = false;
+            if (z >= 0)  allFar = false;
+            if (z <= w)  allBehind = false;
         }
 
         return !(allLeft || allRight || allUp || allDown || allFar || allBehind);
     }
 
-    // vytvoří nové Vertexy a pošle je do Rasterizeru
-    private void clipZ(Vertex vA, Vertex vB, Vertex vC) {
-        // protřídění všech Vertexů podle Z
-        if (vA.getZ() < vB.getZ()) {
-            Vertex temp = vA; vA = vB; vB = temp;
-        }
+    // ořezání podle near plane, propaguje world space vertexy dál
+    private void clipZ(Vertex cA, Vertex cB, Vertex cC,
+                       Vertex wA, Vertex wB, Vertex wC) {
+        // seřazení podle Z (clip space)
+        if (cA.getZ() < cB.getZ()) { Vertex t = cA; cA = cB; cB = t; t = wA; wA = wB; wB = t; }
+        if (cB.getZ() < cC.getZ()) { Vertex t = cB; cB = cC; cC = t; t = wB; wB = wC; wC = t; }
+        if (cA.getZ() < cB.getZ()) { Vertex t = cA; cA = cB; cB = t; t = wA; wA = wB; wB = t; }
 
-        if(vB.getZ() < vC.getZ()) {
-            Vertex temp = vB; vB = vC; vC = temp;
-        }
+        double zMin = 0.01;
 
-        if(vA.getZ() < vB.getZ()) {
-            Vertex temp = vA; vA = vB; vB = temp;
-        }
+        // 1) celý trojúhelník za pozorovatelem
+        if (cA.getZ() < zMin) return;
 
-        double zMin = 0.01; // glitch kvůli double nepřesné hodnotě
+        // 2) viditelný jen 1 vrchol => 1 trojúhelník
+        if (cB.getZ() < zMin) {
+            double tAB = (zMin - cA.getZ()) / (cB.getZ() - cA.getZ());
+            double tAC = (zMin - cA.getZ()) / (cC.getZ() - cA.getZ());
 
-        // ořezání (vA = nejvzdálenější Vertex)
-        // 1) trojúhelník je za pozorovatel, nic nevykreslujeme
-        if(vA.getZ() < zMin) {
+            Vertex cD = Lerp.compute(cA, cB, tAB);
+            Vertex cE = Lerp.compute(cA, cC, tAC);
+            Vertex wD = Lerp.compute(wA, wB, tAB);
+            Vertex wE = Lerp.compute(wA, wC, tAC);
+
+            renderTriangle(cA, cD, cE, wA, wD, wE);
             return;
         }
 
-        // 2) je vidět jen část, kreslíme trojúhelník
-        if(vB.getZ() < zMin) {
-            double tAB = (zMin - vA.getZ()) / (vB.getZ() - vA.getZ());
-            double tAC = (zMin - vA.getZ()) / (vC.getZ() - vA.getZ());
+        // 3) viditelný quad => 2 trojúhelníky
+        if (cC.getZ() < zMin) {
+            double tBC = (zMin - cB.getZ()) / (cC.getZ() - cB.getZ());
+            double tAC = (zMin - cA.getZ()) / (cC.getZ() - cA.getZ());
 
-            Vertex vD = Lerp.compute(vA, vB, tAB);
-            Vertex vE = Lerp.compute(vA, vC, tAC);
+            Vertex cD = Lerp.compute(cB, cC, tBC);
+            Vertex cE = Lerp.compute(cA, cC, tAC);
+            Vertex wD = Lerp.compute(wB, wC, tBC);
+            Vertex wE = Lerp.compute(wA, wC, tAC);
 
-            // vykreslíme nový trojúhelník
-            renderTriangle(vA, vD, vE);
+            renderTriangle(cA, cB, cD, wA, wB, wD);
+            renderTriangle(cA, cD, cE, wA, wD, wE);
             return;
         }
 
-        // 3) je vidět čtyřúhelník, triangulujeme na 2 trojúhelníky
-        if(vC.getZ() < zMin) {
-            double tBC = (zMin - vB.getZ()) / (vC.getZ() - vB.getZ());
-            double tAC = (zMin - vA.getZ()) / (vC.getZ() - vA.getZ());
-
-            // 2 vytvořené trojúhelníky, protože quad
-            Vertex vD = Lerp.compute(vB, vC, tBC);
-            Vertex vE = Lerp.compute(vA, vC, tAC);
-
-            // vykreslíme nový trojúhelník
-            renderTriangle(vA, vB, vD);
-            renderTriangle(vA, vD, vE);
-            return; // abychom náhodou nevykreslovali ten, co nevidíme
-        }
-
-        // 4) je vidět celý trojúhelník
-        renderTriangle(vA, vB, vC);
+        // 4) celý trojúhelník viditelný
+        renderTriangle(cA, cB, cC, wA, wB, wC);
     }
 
-    private void renderTriangle(Vertex v1, Vertex v2, Vertex v3) {
-        // dehomog. každý Vertex, abychom byli v NDC
-        v1 = v1.dehomog().orElse(v1);
-        v2 = v2.dehomog().orElse(v2);
-        v3 = v3.dehomog().orElse(v3);
+    private void renderTriangle(Vertex c1, Vertex c2, Vertex c3,
+                                Vertex w1, Vertex w2, Vertex w3) {
+        // dehomogenizace do NDC
+        c1 = c1.dehomog().orElse(c1);
+        c2 = c2.dehomog().orElse(c2);
+        c3 = c3.dehomog().orElse(c3);
 
-        // transformace do okna
-        v1 = transformToWindow(v1);
-        v2 = transformToWindow(v2);
-        v3 = transformToWindow(v3);
+        // transformace do window space
+        c1 = transformToWindow(c1);
+        c2 = transformToWindow(c2);
+        c3 = transformToWindow(c3);
 
-        // rasterizace (poslat do Rasterizer)
+        // smíšený vertex: screen pozice + barva + UV z clip space, normála + world pozice z world space pro Phong
+        Vertex r1 = new Vertex(c1.getPosition(), c1.getColor(), c1.getTexUV(), w1.getNormal(), c1.getOne(),  w1.getPosition());
+        Vertex r2 = new Vertex(c2.getPosition(), c2.getColor(), c2.getTexUV(), w2.getNormal(), c2.getOne(),  w2.getPosition());
+        Vertex r3 = new Vertex(c3.getPosition(), c3.getColor(), c3.getTexUV(), w3.getNormal(), c3.getOne(),  w3.getPosition());
+
         if (wireframe) {
             // drátový model = pouze hrany trojúhelníka
-            lineRasterizer.rasterize(v1, v2);
-            lineRasterizer.rasterize(v2, v3);
-            lineRasterizer.rasterize(v3, v1);
+            lineRasterizer.rasterize(r1, r2);
+            lineRasterizer.rasterize(r2, r3);
+            lineRasterizer.rasterize(r3, r1);
         } else {
-            // normání render = pro plochu trojuhelnika
-            triangleRasterizer.rasterize(v1, v2, v3);
+            // vyplněný model = plocha trojúhelníka
+            triangleRasterizer.rasterize(r1, r2, r3);
         }
     }
 
@@ -243,7 +241,8 @@ public class Renderer3D {
                 v.getColor(),
                 v.getTexUV(),
                 v.getNormal(),
-                v.getOne()
+                v.getOne(),
+                v.getWorldPos()
         );
     }
 }

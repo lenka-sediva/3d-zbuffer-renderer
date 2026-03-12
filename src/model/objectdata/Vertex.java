@@ -11,6 +11,7 @@ public class Vertex implements Vectorizable<Vertex> {
     private final Vec2D texUV;
     private final Vec3D normal;
     private final double one;
+    private final Point3D worldPosition; // světové souřadnice pro osvětlení
 
     public Col getColor() {
         return col;
@@ -29,7 +30,16 @@ public class Vertex implements Vectorizable<Vertex> {
     }
 
     public Vertex(Point3D position, Col col) {
-        this(position, col, new Vec2D(0,0), new Vec3D(0,0,0), 1.0);
+        this(position, col, new Vec2D(0,0), new Vec3D(0,0,0), 1.0, position);
+    }
+
+    public Vertex(Point3D position, Col col, Vec2D texUV, Vec3D normal, double one, Point3D worldPosition) {
+        this.position = position;
+        this.col = col;
+        this.texUV = texUV;
+        this.normal = normal;
+        this.one = one;
+        this.worldPosition = worldPosition;
     }
 
     public Vertex(Point3D position, Col col, Vec2D texUV, Vec3D normal, double one) {
@@ -38,6 +48,7 @@ public class Vertex implements Vectorizable<Vertex> {
         this.texUV = texUV;
         this.normal = normal;
         this.one = one;
+        this.worldPosition = position;
     }
 
     public Vertex(Point3D position) {
@@ -46,6 +57,10 @@ public class Vertex implements Vectorizable<Vertex> {
 
     public Point3D getPosition() {
         return position;
+    }
+
+    public Point3D getWorldPos() {
+        return worldPosition;
     }
 
     public double getX() {
@@ -67,7 +82,8 @@ public class Vertex implements Vectorizable<Vertex> {
                 this.col.mul(scalar).saturate(),
                 this.texUV.mul(scalar),
                 this.normal.mul(scalar),
-                this.one * scalar
+                this.one * scalar,
+                this.worldPosition
         );
     }
 
@@ -78,7 +94,12 @@ public class Vertex implements Vectorizable<Vertex> {
                 this.col.add(other.getColor()).saturate(),
                 this.texUV.add(other.getTexUV()),
                 this.normal.add(other.getNormal()),
-                this.one + other.getOne()
+                this.one + other.getOne(),
+                new Point3D(
+                        this.worldPosition.getX() + other.getWorldPos().getX(),
+                        this.worldPosition.getY() + other.getWorldPos().getY(),
+                        this.worldPosition.getZ() + other.getWorldPos().getZ()
+                )
         );
     }
 
@@ -96,12 +117,17 @@ public class Vertex implements Vectorizable<Vertex> {
                 this.col.mul(1 / w).saturate(),
                 this.texUV.mul(1 / w),
                 this.normal.mul(1 / w),
-                this.one / w
+                this.one / w,
+                this.worldPosition // nedehomogenizuje se
         ));
     }
 
+    // transformace vertexu maticí (transformuje pozici, normálu a světové souřadnice)
     public Vertex transf(Mat4 m) {
-        return new Vertex(position.mul(m), col, texUV, normal, one);
+        Vec3D transformedNormal = new Vec3D(
+                new Point3D(normal.getX(), normal.getY(), normal.getZ(), 0).mul(m)
+        );
+        return new Vertex(position.mul(m), col, texUV, transformedNormal, one, worldPosition);
     }
 
     public Vec2D getTextureCoordinates() {

@@ -34,15 +34,11 @@ public class Cylinder extends Solid {
             Col color = new Col(0.0, 0.2 + shade * 0.8, 0.0); // tmavě až světle zelená
 
             // spodní a vrchní vertex pro segment
-            vertexBuffer.add(new Vertex(
-                    new Point3D(x, center.getY() - halfHeight, z),
-                    color, new Vec2D(i / (double)segments, 0), normal, 1.0
-            ));
+            Point3D posBottom = new Point3D(x, center.getY() - halfHeight, z);
+            Point3D posTop = new Point3D(x, center.getY() + halfHeight, z);
 
-            vertexBuffer.add(new Vertex(
-                    new Point3D(x, center.getY() + halfHeight, z),
-                    color, new Vec2D(i / (double)segments, 1), normal, 1.0
-            ));
+            vertexBuffer.add(new Vertex(posBottom, color, new Vec2D(i / (double)segments, 0), normal, 1.0, posBottom));
+            vertexBuffer.add(new Vertex(posTop, color, new Vec2D(i / (double)segments, 1), normal, 1.0, posTop));
         }
 
         // vytvoření indexů a partů

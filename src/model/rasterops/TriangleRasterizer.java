@@ -3,6 +3,7 @@ package model.rasterops;
 import model.objectdata.Vertex;
 import model.rasterdata.Visibility;
 import transforms.Col;
+import transforms.Point3D;
 import transforms.Vec2D;
 
 import java.awt.image.BufferedImage;
@@ -41,9 +42,6 @@ public class TriangleRasterizer {
         double oneA = vA.getOne();
         double oneB = vB.getOne();
         double oneC = vC.getOne();
-
-//        System.out.println("oneA=" + oneA + " oneB=" + oneB + " oneC=" + oneC);
-//        System.out.println("uvA=" + uvA + " uvB=" + uvB + " uvC=" + uvC);
 
         // bounding box oříznutý na rozměry obrazu
         int minX = Math.max((int) Math.floor(Math.min(ax, Math.min(bx, cx))), 0);
@@ -109,9 +107,14 @@ public class TriangleRasterizer {
                                     .add(vB.getPosition().mul(wB))
                                     .add(vC.getPosition().mul(wC)),
                             col,
-                            new Vec2D(u, v), // UV
+                            new Vec2D(u, v),
                             vA.getNormal().mul(wA).add(vB.getNormal().mul(wB)).add(vC.getNormal().mul(wC)),
-                            1.0
+                            1.0,
+                            new Point3D(
+                                    vA.getWorldPos().getX() * wA + vB.getWorldPos().getX() * wB + vC.getWorldPos().getX() * wC,
+                                    vA.getWorldPos().getY() * wA + vB.getWorldPos().getY() * wB + vC.getWorldPos().getY() * wC,
+                                    vA.getWorldPos().getZ() * wA + vB.getWorldPos().getZ() * wB + vC.getWorldPos().getZ() * wC
+                            )
                     );
                     col = shader.apply(interpolated);
                 }

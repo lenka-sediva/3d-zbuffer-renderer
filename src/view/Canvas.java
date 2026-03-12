@@ -14,6 +14,7 @@ public class Canvas extends JPanel {
     private String currentProjectionText = "Perspektivní projekce [P]";
     private String currentMode = "Vyplněný model [M]";
     private String currentCameraMode = "3. osoba [MEZERNÍK] ";
+    private Solid lightSphere;
 
     public Canvas(int width, int height) {
         setPreferredSize(new Dimension(width, height));
@@ -44,6 +45,10 @@ public class Canvas extends JPanel {
         repaint();
     }
 
+    public void setLightSphere(Solid lightSphere) {
+        this.lightSphere = lightSphere;
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -72,6 +77,16 @@ public class Canvas extends JPanel {
             }
             g.drawString("[" + s.getShortcut() + "] " + s.getName(), 10, y);
             y += 25;
+        }
+
+        // světlo = vždy bílé, mimo seznam objektů
+        if (lightSphere != null) {
+            if (lightSphere.isSelected()) {
+                g.setColor(Color.ORANGE);
+            } else {
+                g.setColor(Color.WHITE);
+            }
+            g.drawString("[L] světlo", 10, y);
         }
 
         // pravý dolní roh = model + projekce
