@@ -9,8 +9,7 @@ import shader.*;
 import transforms.*;
 import view.Canvas;
 
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.Timer;
@@ -22,13 +21,13 @@ public class Controller {
     private final TriangleRasterizer triangleRasterizer;
     private final LineRasterizer lineRasterizer;
 
-    private final Solid tetrahedron, sphere, cylinder, cube, axis;
+    private final Solid tetrahedron, sphere, cylinder, cube, axis, bicubicSurface;
     private Solid currentObject;
     private final List<Solid> solids;
 
     private final Renderer3D renderer;
     private Camera view;
-    private Mat4 model, persp, ortho;
+    private Mat4 persp, ortho, proj;
     private enum ProjectionType { PERSPECTIVE, ORTHOGONAL }
     private ProjectionType currentProjection = ProjectionType.PERSPECTIVE;
     private enum ModeType { SOLID, WIREFRAME }
@@ -43,23 +42,29 @@ public class Controller {
     private static final Point3D lightInitPosition = new Point3D(-2, -1, 2);
     private double lightAnimRadius = 3.0;
 
+    // myš
+    private int lastMouseX, lastMouseY;
+    private boolean mousePressed = false;
+
     public Controller(Canvas canvas) {
         this.canvas = canvas;
         this.vB = new Visibility(canvas.getRaster());
         this.renderer = new Renderer3D();
 
-        this.tetrahedron = new Tetrahedron();
-        this.sphere = new Sphere(new Point3D(-1,2,0), 1.0, 20, 20);
-        this.cylinder = new Cylinder(new Point3D(-5,0,0), 1.0, 2.0, 20);
-        this.cube = new Cube(new Point3D(2, 0, 0), 1.0);
-        this.axis = new Axis();
+        tetrahedron = new Tetrahedron();
+        sphere = new Sphere(new Point3D(-1,2,0), 1.0, 20, 20);
+        cylinder = new Cylinder(new Point3D(-5,0,0), 1.0, 2.0, 20);
+        cube = new Cube(new Point3D(2, 0, 0), 1.0);
         cube.setModelMatrix(new Mat4Rot(Math.toRadians(90), new Vec3D(1, 0, 0)));
+        axis = new Axis();
+        bicubicSurface = getBicubicSurface();
 
         solids = new ArrayList<>();
         solids.add(tetrahedron);
         solids.add(sphere);
         solids.add(cylinder);
         solids.add(cube);
+        solids.add(bicubicSurface);
 
         canvas.setObjects(solids);
         currentObject = solids.getFirst();
@@ -92,6 +97,7 @@ public class Controller {
         sphere.setShader(new PhongColor(light));
         cylinder.setShader(new PhongColor(light));
         cube.setShader(new PhongColor(light));
+        bicubicSurface.setShader(new PhongColor(light));
 
         initListeners(canvas);
         redraw();
@@ -104,12 +110,12 @@ public class Controller {
         renderer.setLineRasterizer(lineRasterizer);
         renderer.setViewport(canvas.getWidth(), canvas.getHeight());
 
-        model = new Mat4Identity();
+        Mat4 model = new Mat4Identity();
 
         persp = new Mat4PerspRH(Math.toRadians(90), (double) canvas.getHeight() / canvas.getWidth(), 0.1, 100); // perspektivní matice projekce
         ortho = new Mat4OrthoRH(canvas.getWidth() / 100., canvas.getHeight() / 100., 0.1, 100); // ortogonální matice projekce
 
-        Mat4 proj = currentProjection == ProjectionType.PERSPECTIVE ? persp : ortho;
+        proj = currentProjection == ProjectionType.PERSPECTIVE ? persp : ortho;
 
         // renderování všech objektů
         renderer.renderSolids(solids, model, view, proj);
@@ -132,6 +138,10 @@ public class Controller {
                         for (Solid s : solids) {
                             s.setModelMatrix(new Mat4Identity());
                         }
+                        // reset pozice světla (není v solids)
+                        lightTimer.stop();
+                        light.setPosition(lightInitPosition);
+                        lightSphere.setModelMatrix(new Mat4Identity());
                         redraw();
                         break;
 
@@ -217,8 +227,8 @@ public class Controller {
                     case KeyEvent.VK_3:
                     case KeyEvent.VK_NUMPAD3:
                         if (currentObject == cube) setSurface(grassTexture);
-                        if (currentObject == cylinder) setSurface(woodTexture);
-                        if (currentObject == sphere || currentObject == tetrahedron) setSurface(uvTexture);
+                        if (currentObject == cylinder || currentObject == tetrahedron) setSurface(woodTexture);
+                        if (currentObject == sphere || currentObject == bicubicSurface) setSurface(uvTexture);
                         redraw();
                         break;
 
@@ -237,6 +247,10 @@ public class Controller {
 
                     case KeyEvent.VK_K:
                         select(cube, "krychle");
+                        break;
+
+                    case KeyEvent.VK_B:
+                        select(bicubicSurface, "bicubic");
                         break;
 
                     case KeyEvent.VK_L:
@@ -279,6 +293,39 @@ public class Controller {
                         }
                         break;
                 }
+            }
+        });
+
+        // rozhlížení pomocí myši (kliknutí a tažení)
+        canvas.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                lastMouseX = e.getX();
+                lastMouseY = e.getY();
+                mousePressed = true;
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                mousePressed = false;
+            }
+        });
+
+        canvas.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if (!mousePressed) return;
+
+                int dx = e.getX() - lastMouseX;
+                int dy = e.getY() - lastMouseY;
+
+                view = view.addAzimuth(dx * 0.005);  // citlivost horizontálního pohybu
+                view = view.addZenith(-dy * 0.005);  // citlivost vertikálního pohybu
+
+                lastMouseX = e.getX();
+                lastMouseY = e.getY();
+
+                redraw();
             }
         });
 
@@ -374,6 +421,7 @@ public class Controller {
                         .mul(new Mat4Transl(center))
         );
     }
+
     private void setSelectedObject(Solid obj) {
         if (currentObject != null) {
             currentObject.setSelected(false);
@@ -405,6 +453,35 @@ public class Controller {
                 phong.setCameraPos(eye);
             }
         }
+    }
+
+    // bikubická plocha
+    private BicubicSurface getBicubicSurface() {
+        Point3D[] controlPoints = new Point3D[] {
+                new Point3D(-1, -2, 0),
+                new Point3D(-0.5, -2, 1),
+                new Point3D(0.5, -2, -1),
+                new Point3D(1, -2, 0),
+
+                new Point3D(-1, -1.5, 1),
+                new Point3D(-0.5, -1.5, 2),
+                new Point3D(0.5, -1.5, 0),
+                new Point3D(1, -1.5, 1),
+
+                new Point3D(-1, -0.5, -1),
+                new Point3D(-0.5, -0.5, 0),
+                new Point3D(0.5, -0.5, 2),
+                new Point3D(1, -0.5, -1),
+
+                new Point3D(-1, 0, 0),
+                new Point3D(-0.5, 0, 1),
+                new Point3D(0.5, 0, -1),
+                new Point3D(1, 0, 0)
+        };
+
+        Bicubic bicubic = new Bicubic(Cubic.BEZIER, controlPoints);
+
+        return new BicubicSurface(bicubic, 20, 20);
     }
 
     private void hardClear() {

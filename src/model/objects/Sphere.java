@@ -52,26 +52,18 @@ public class Sphere extends Solid {
             }
         }
 
-        // generování indexů pro trojúhelníky
+        // generování indexů pro TRIANGLE_STRIP
         for (int i = 0; i < stacks; i++) {
-            for (int j = 0; j < slices; j++) {
+            int start = indexBuffer.size();
+            for (int j = 0; j <= slices; j++) {
                 int current = i * (slices + 1) + j;
-                int next = current + slices + 1;
+                int next = (i + 1) * (slices + 1) + j;
 
-                // první trojúhelník quadu
-                int start = indexBuffer.size();
                 indexBuffer.add(current);
                 indexBuffer.add(next);
-                indexBuffer.add(current + 1);
-                partBuffer.add(new Part(start, 3, TopologyType.TRIANGLE_LIST));
-
-                // druhý trojúhelník quadu
-                start = indexBuffer.size();
-                indexBuffer.add(next);
-                indexBuffer.add(next + 1);
-                indexBuffer.add(current + 1);
-                partBuffer.add(new Part(start, 3, TopologyType.TRIANGLE_LIST));
             }
+            // Part pro celý pás
+            partBuffer.add(new Part(start, (slices + 1) * 2, TopologyType.TRIANGLE_STRIP));
         }
     }
 }
