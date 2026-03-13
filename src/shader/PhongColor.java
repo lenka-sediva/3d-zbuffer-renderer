@@ -8,6 +8,7 @@ import transforms.Vec3D;
 public class PhongColor implements FragmentShader {
     private final Light light;
     private FragmentShader surfaceShader;
+    private double ambient = 0.5; // intenzita ambientní složky (0.0 - 1.0)
 
     public PhongColor(Light light) {
         this.light = light;
@@ -16,6 +17,10 @@ public class PhongColor implements FragmentShader {
 
     public void setSurfaceShader(FragmentShader surfaceShader) {
         this.surfaceShader = surfaceShader;
+    }
+
+    public void setAmbient(double ambient) {
+        this.ambient = ambient;
     }
 
     @Override
@@ -39,7 +44,7 @@ public class PhongColor implements FragmentShader {
                 .orElse(new Vec3D(0, 1, 0));
 
         // ambientní složka
-        double ambient = light.getAmbient();
+        double ambient = this.ambient; // může být nastavena zvenčí (ve slideru)
 
         // difúzní složka = max(0, N · L)
         double diff = Math.max(0.0, normal.dot(toLight));

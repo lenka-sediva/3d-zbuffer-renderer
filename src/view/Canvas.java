@@ -15,10 +15,21 @@ public class Canvas extends JPanel {
     private String currentMode = "Vyplněný model [M]";
     private String currentCameraMode = "3. osoba [MEZERNÍK] ";
     private Solid lightSphere;
+    private final JSlider ambientSlider;
 
     public Canvas(int width, int height) {
         setPreferredSize(new Dimension(width, height));
+        setLayout(new BorderLayout());
+
         raster = new ColorBuffer(width, height);
+
+        // slider pro osvětlení nahoře
+        ambientSlider = new JSlider(0, 100, 50); // 0–1 => 0–100
+        ambientSlider.setMajorTickSpacing(25);
+        ambientSlider.setPaintTicks(true);
+        ambientSlider.setPaintLabels(true);
+
+        add(ambientSlider, BorderLayout.NORTH);
 
         clear();
     }
@@ -47,6 +58,10 @@ public class Canvas extends JPanel {
 
     public void setLightSphere(Solid lightSphere) {
         this.lightSphere = lightSphere;
+    }
+
+    public JSlider getAmbientSlider() {
+        return ambientSlider;
     }
 
     @Override

@@ -76,7 +76,7 @@ public class Controller {
         view = new Camera(new Vec3D(0, 0, 0), Math.PI * 1.25, Math.PI * -0.125, 3, false);
 
         // Phong
-        light = new Light(new Point3D(0, 0, 2), new Col(1.0, 1.0, 1.0), 0.5);
+        light = new Light(new Point3D(0, 0, 2), new Col(1.0, 1.0, 1.0));
         lightSphere = new Sphere(light.getPosition(), 0.25, 10, 10);
         lightSphere.setShader(new ConstantColor(light.getColor())); // koule svítí barvou světla
 
@@ -257,6 +257,18 @@ public class Controller {
                     case KeyEvent.VK_SUBTRACT: scaleSelected(0.9); break;
                 }
             }
+        });
+
+        canvas.getAmbientSlider().addChangeListener(e -> {
+            double ambient = canvas.getAmbientSlider().getValue() / 100.0;
+
+            for (Solid s : solids) {
+                if (s.getShader() instanceof PhongColor) {
+                    ((PhongColor) s.getShader()).setAmbient(ambient);
+                }
+            }
+
+            redraw();
         });
     }
 
