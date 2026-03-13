@@ -113,11 +113,12 @@ public class Canvas extends JPanel {
 
         // levý dolní roh = nápověda
         g.setColor(Color.ORANGE);
-        g.drawString("Nápověda:", 10, getHeight() - 135);
+        g.drawString("Nápověda:", 10, getHeight() - 160);
         g.setColor(Color.WHITE);
-        g.drawString("[šipky] posun objektu", 10, getHeight() - 110);
-        g.drawString("[R] animace rotace objektu v čase", 10, getHeight() - 85);
-        g.drawString("[+] zvětšení objektu, [-] zmenšení objektu", 10, getHeight() - 60);
+        g.drawString("[šipky] posun objektu", 10, getHeight() - 135);
+        g.drawString("[R] animace světla v čase", 10, getHeight() - 110);
+        g.drawString("[+] zvětšení objektu, [-] zmenšení objektu", 10, getHeight() - 85);
+        g.drawString("[1] konstantní barva, [2] interpolovaná, [3] textura", 10, getHeight() - 60);
         g.drawString("[C] smazání, [O] původní stav, [XYZ] rotace podle os", 10, getHeight() - 35);
         g.drawString("Aktuálně vybraný objekt: ", 10, getHeight() - 10);
         g.setColor(Color.ORANGE);

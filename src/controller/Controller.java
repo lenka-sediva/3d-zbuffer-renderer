@@ -13,6 +13,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.Timer;
 
 public class Controller {
     private final Canvas canvas;
@@ -37,6 +38,10 @@ public class Controller {
     // Phong a světlo
     private final Light light;
     private final Solid lightSphere;
+    private Timer lightTimer;
+    private double lightAngle = 0;
+    private static final Point3D lightInitPosition = new Point3D(-2, -1, 2);
+    private double lightAnimRadius = 3.0;
 
     public Controller(Canvas canvas) {
         this.canvas = canvas;
@@ -76,7 +81,7 @@ public class Controller {
         view = new Camera(new Vec3D(0, 0, 0), Math.PI * 1.25, Math.PI * -0.125, 3, false);
 
         // Phong
-        light = new Light(new Point3D(0, 0, 2), new Col(1.0, 1.0, 1.0));
+        light = new Light(lightInitPosition, new Col(1.0, 1.0, 1.0)); // bílé světlo (barva lze změnit) a bude jí odpovídat i difuzní složka na objektu
         lightSphere = new Sphere(light.getPosition(), 0.25, 10, 10);
         lightSphere.setShader(new ConstantColor(light.getColor())); // koule svítí barvou světla
 
@@ -255,12 +260,30 @@ public class Controller {
 
                     case KeyEvent.VK_MINUS:
                     case KeyEvent.VK_SUBTRACT: scaleSelected(0.9); break;
+
+                    // animace světla v čase
+                    case KeyEvent.VK_R:
+                        if (lightTimer.isRunning()) {
+                            lightTimer.stop();
+                        } else {
+                            // začátek od aktuální pozice světla
+                            lightAngle = Math.atan2(
+                                    light.getPosition().getY(),
+                                    light.getPosition().getX()
+                            );
+                            // radius = skutečná vzdálenost světla od středu
+                            lightAnimRadius = Math.sqrt(
+                                    light.getPosition().getX() * light.getPosition().getX() + light.getPosition().getY() * light.getPosition().getY()
+                            );
+                            lightTimer.start();
+                        }
+                        break;
                 }
             }
         });
 
         // ambientní složka osvětlení ze slideru
-        canvas.getAmbientSlider().addChangeListener(e -> {
+        canvas.getAmbientSlider().addChangeListener(_ -> {
             double ambient = canvas.getAmbientSlider().getValue() / 100.0;
 
             for (Solid s : solids) {
@@ -273,7 +296,7 @@ public class Controller {
         });
 
         // spekulární složka
-        canvas.getSpecularSlider().addChangeListener(e -> {
+        canvas.getSpecularSlider().addChangeListener(_ -> {
             double specular = canvas.getSpecularSlider().getValue() / 100.0;
 
             for (Solid s : solids) {
@@ -286,7 +309,7 @@ public class Controller {
         });
 
         // difúzní složka
-        canvas.getDiffuseSlider().addChangeListener(e -> {
+        canvas.getDiffuseSlider().addChangeListener(_ -> {
             double diffuse = canvas.getDiffuseSlider().getValue() / 100.0;
 
             for (Solid s : solids) {
@@ -295,6 +318,22 @@ public class Controller {
                 }
             }
 
+            redraw();
+        });
+
+        // animace světla v čase
+        lightTimer = new Timer(16, _ -> { // 60 FPS
+            lightAngle += 0.02;
+            double x = Math.cos(lightAngle) * lightAnimRadius;
+            double y = Math.sin(lightAngle) * lightAnimRadius;
+            double z = 2.0; // původní Z světla
+
+            light.setPosition(new Point3D(x, y, z));
+            lightSphere.setModelMatrix(new Mat4Transl(
+                    x - lightInitPosition.getX(),
+                    y - lightInitPosition.getY(),
+                    0
+            ));
             redraw();
         });
     }
