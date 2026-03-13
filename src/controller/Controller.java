@@ -259,12 +259,39 @@ public class Controller {
             }
         });
 
+        // ambientní složka osvětlení ze slideru
         canvas.getAmbientSlider().addChangeListener(e -> {
             double ambient = canvas.getAmbientSlider().getValue() / 100.0;
 
             for (Solid s : solids) {
                 if (s.getShader() instanceof PhongColor) {
                     ((PhongColor) s.getShader()).setAmbient(ambient);
+                }
+            }
+
+            redraw();
+        });
+
+        // spekulární složka
+        canvas.getSpecularSlider().addChangeListener(e -> {
+            double specular = canvas.getSpecularSlider().getValue() / 100.0;
+
+            for (Solid s : solids) {
+                if (s.getShader() instanceof PhongColor) {
+                    ((PhongColor) s.getShader()).setSpecularStrength(specular);
+                }
+            }
+
+            redraw();
+        });
+
+        // difúzní složka
+        canvas.getDiffuseSlider().addChangeListener(e -> {
+            double diffuse = canvas.getDiffuseSlider().getValue() / 100.0;
+
+            for (Solid s : solids) {
+                if (s.getShader() instanceof PhongColor) {
+                    ((PhongColor) s.getShader()).setDiffuseStrength(diffuse);
                 }
             }
 
@@ -332,6 +359,15 @@ public class Controller {
         }
     }
 
+    private void updateCameraPos() {
+        Vec3D eye = view.getEye();
+        for (Solid s : solids) {
+            if (s.getShader() instanceof PhongColor phong) {
+                phong.setCameraPos(eye);
+            }
+        }
+    }
+
     private void hardClear() {
         canvas.clear();
 
@@ -345,6 +381,7 @@ public class Controller {
     private void redraw() {
         vB.clear();
 
+        updateCameraPos(); // pro přepočet spekulární složky
         initObjects();
 
         canvas.repaint();

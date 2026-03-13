@@ -9,6 +9,10 @@ public class PhongColor implements FragmentShader {
     private final Light light;
     private FragmentShader surfaceShader;
     private double ambient = 0.5; // intenzita ambientní složky (0.0 - 1.0)
+    private double specularStrength = 0.5; // intenzita spekulární složky (0.0 - 1.0)
+    private final int shininess = 32; // lesklost povrchu (vyšší = menší a ostřejší spekulární odlesk)
+    private Vec3D cameraPos = new Vec3D(0, 0, 5); // fallback = pozice kamery (pro výpočet spekulární složky)
+    private double diffuseStrength = 1.0; // intenzita difúzní složky (0.0 - 1.0)
 
     public PhongColor(Light light) {
         this.light = light;
@@ -21,6 +25,18 @@ public class PhongColor implements FragmentShader {
 
     public void setAmbient(double ambient) {
         this.ambient = ambient;
+    }
+
+    public void setSpecularStrength(double specularStrength) {
+        this.specularStrength = specularStrength;
+    }
+
+    public void setCameraPos(Vec3D cameraPos) {
+        this.cameraPos = cameraPos;
+    }
+
+    public void setDiffuseStrength(double diffuseStrength) {
+        this.diffuseStrength = diffuseStrength;
     }
 
     @Override
@@ -52,8 +68,32 @@ public class PhongColor implements FragmentShader {
         // atenuace = intenzita klesá se vzdáleností
         double attenuation = 1.0 / (1.0 + 0.2 * distance + 0.05 * distance * distance);
 
+        // spekulární složka = max(0, R · V)^shininess
+        Vec3D fragPos = new Vec3D(
+                v.getWorldPos().getX(),
+                v.getWorldPos().getY(),
+                v.getWorldPos().getZ()
+        );
+
+        Vec3D viewDir = cameraPos.sub(fragPos)
+                .normalized()
+                .orElse(new Vec3D(0, 0, 1));
+
+        Vec3D reflectDir = normal.mul(2 * normal.dot(toLight)).sub(toLight)
+                .normalized()
+                .orElse(new Vec3D(0,0,1));
+
+        double spec = Math.pow(
+                Math.max(viewDir.dot(reflectDir), 0.0),
+                shininess
+        );
+
+        double specular = specularStrength * spec;
+
         // výsledná intenzita
-        double intensity = ambient + (1.0 - ambient) * diff * attenuation;
+        double diffuse = diff * attenuation * diffuseStrength;
+
+        double intensity = ambient + diffuse + specular;
         intensity = Math.min(1.0, intensity);
 
         Col lightCol = light.getColor();

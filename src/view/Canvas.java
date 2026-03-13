@@ -16,6 +16,8 @@ public class Canvas extends JPanel {
     private String currentCameraMode = "3. osoba [MEZERNÍK] ";
     private Solid lightSphere;
     private final JSlider ambientSlider;
+    private final JSlider specularSlider;
+    private final JSlider diffuseSlider;
 
     public Canvas(int width, int height) {
         setPreferredSize(new Dimension(width, height));
@@ -28,10 +30,41 @@ public class Canvas extends JPanel {
         ambientSlider.setMajorTickSpacing(25);
         ambientSlider.setPaintTicks(true);
         ambientSlider.setPaintLabels(true);
+        ambientSlider.setFocusable(false); // aby nezabíral focus a neblokoval klávesové zkratky
 
-        add(ambientSlider, BorderLayout.NORTH);
+        specularSlider = new JSlider(0, 100, 50);
+        specularSlider.setMajorTickSpacing(25);
+        specularSlider.setPaintTicks(true);
+        specularSlider.setPaintLabels(true);
+        specularSlider.setFocusable(false);
+
+        diffuseSlider = new JSlider(0, 100, 100); // výchozí 100 = plná difúze
+        diffuseSlider.setMajorTickSpacing(25);
+        diffuseSlider.setPaintTicks(true);
+        diffuseSlider.setPaintLabels(true);
+        diffuseSlider.setFocusable(false);
+
+        JPanel sliders = new JPanel();
+        sliders.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 5));
+        sliders.setOpaque(false); // aby nezakrýval celý horní renderovaný obraz
+
+        sliders.add(labeledSlider("Ambientní složka", ambientSlider));
+        sliders.add(labeledSlider("Difúzní složka", diffuseSlider));
+        sliders.add(labeledSlider("Spekulární složka", specularSlider));
+
+        add(sliders, BorderLayout.NORTH);
 
         clear();
+    }
+
+    private JPanel labeledSlider(String label, JSlider slider) {
+        JPanel panel = new JPanel(new BorderLayout());
+        JLabel l = new JLabel(label, SwingConstants.CENTER);
+        l.setFont(new Font("SansSerif", Font.BOLD, 13));
+        panel.add(l, BorderLayout.NORTH);
+        panel.add(slider, BorderLayout.CENTER);
+        slider.setPreferredSize(new Dimension(225, 50));
+        return panel;
     }
 
     public void setCurrentProjectionText(String text) {
@@ -62,6 +95,14 @@ public class Canvas extends JPanel {
 
     public JSlider getAmbientSlider() {
         return ambientSlider;
+    }
+
+    public JSlider getSpecularSlider() {
+        return specularSlider;
+    }
+
+    public JSlider getDiffuseSlider() {
+        return diffuseSlider;
     }
 
     @Override
