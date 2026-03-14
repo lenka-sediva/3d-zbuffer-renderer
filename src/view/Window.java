@@ -10,7 +10,7 @@ public class Window extends JFrame {
         panel = new Canvas(width, height);
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setResizable(false);
+        setResizable(true);
         setTitle("PGRF2 2026: Task 1 by Lenka Šedivá");
 
         add(panel, BorderLayout.CENTER);

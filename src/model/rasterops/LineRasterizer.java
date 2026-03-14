@@ -2,7 +2,6 @@ package model.rasterops;
 
 import model.objectdata.Vertex;
 import model.rasterdata.Visibility;
-import model.rasterdata.Raster;
 import transforms.Col;
 
 

@@ -45,4 +45,9 @@ public class Visibility {
     public int getHeight() {
         return cB.getHeight();
     }
+
+    public void resize(int width, int height) {
+        cB.resize(width, height);
+        dB.resize(width, height);
+    }
 }

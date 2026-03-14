@@ -7,7 +7,7 @@ import java.awt.image.BufferedImage;
 
 public class ColorBuffer implements Raster<Col> {
 
-    private final BufferedImage img;
+    private BufferedImage img;
     private final Col backgroundColor = new Col(0x16161d);
 
     public ColorBuffer(int width, int height) {
@@ -53,4 +53,14 @@ public class ColorBuffer implements Raster<Col> {
         return img;
     }
 
+    public void resize(int width, int height) {
+        BufferedImage newImg = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+        Graphics g = newImg.getGraphics();
+        g.setColor(new Color(backgroundColor.getRGB()));
+        g.fillRect(0, 0, width, height);
+
+        // nastaví nový obraz
+        this.img = newImg;
+    }
 }

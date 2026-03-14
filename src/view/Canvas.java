@@ -1,10 +1,14 @@
 package view;
 
+import controller.Controller;
 import model.objectdata.Solid;
 import model.rasterdata.ColorBuffer;
+import model.rasterdata.Visibility;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.util.List;
 
 public class Canvas extends JPanel {
@@ -18,6 +22,8 @@ public class Canvas extends JPanel {
     private final JSlider ambientSlider;
     private final JSlider specularSlider;
     private final JSlider diffuseSlider;
+    private Visibility visibility;
+    private Controller controller;
 
     public Canvas(int width, int height) {
         setPreferredSize(new Dimension(width, height));
@@ -53,6 +59,23 @@ public class Canvas extends JPanel {
         sliders.add(labeledSlider("Spekulární složka", specularSlider));
 
         add(sliders, BorderLayout.NORTH);
+
+        // listener pro resize okna
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                int w = getWidth();
+                int h = getHeight();
+                if (w > 0 && h > 0) {
+                    if (visibility != null) {
+                        visibility.resize(w, h);
+                    }
+                    if (controller != null) {
+                        controller.redraw();
+                    }
+                }
+            }
+        });
 
         clear();
     }
@@ -91,6 +114,14 @@ public class Canvas extends JPanel {
 
     public void setLightSphere(Solid lightSphere) {
         this.lightSphere = lightSphere;
+    }
+
+    public void setVisibility(Visibility vB) {
+        this.visibility = vB;
+    }
+
+    public void setController(Controller controller) {
+        this.controller = controller;
     }
 
     public JSlider getAmbientSlider() {

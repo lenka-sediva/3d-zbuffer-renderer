@@ -48,7 +48,9 @@ public class Controller {
 
     public Controller(Canvas canvas) {
         this.canvas = canvas;
+        canvas.setController(this);
         this.vB = new Visibility(canvas.getRaster());
+        canvas.setVisibility(vB); // předání pro resize okna
         this.renderer = new Renderer3D();
 
         tetrahedron = new Tetrahedron();
@@ -494,7 +496,7 @@ public class Controller {
         redraw();
     }
 
-    private void redraw() {
+    public void redraw() {
         vB.clear();
 
         updateCameraPos(); // pro přepočet spekulární složky

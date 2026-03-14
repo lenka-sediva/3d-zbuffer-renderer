@@ -83,10 +83,7 @@ public class Renderer3D {
                             Vertex v1 = verticesClip.get(i1).dehomog().orElse(verticesClip.get(i1));
                             Vertex v2 = verticesClip.get(i2).dehomog().orElse(verticesClip.get(i2));
 
-                            v1 = transformToWindow(v1);
-                            v2 = transformToWindow(v2);
-
-                            lineRasterizer.rasterize(v1, v2);
+                            clipLineZ(v1, v2);
                         }
                         break;
 
@@ -202,6 +199,41 @@ public class Renderer3D {
         // 4) celý trojúhelník viditelný
         renderTriangle(cA, cB, cC, wA, wB, wC);
     }
+
+    // ořezání pro úsečky
+    private void clipLineZ(Vertex a, Vertex b) {
+        double zMin = 0.01;
+
+        // oba body za kamerou
+        if (a.getZ() < zMin && b.getZ() < zMin) return;
+
+        // 1 bod za kamerou
+        if (a.getZ() < zMin || b.getZ() < zMin) {
+            Vertex near = a;
+            Vertex far = b;
+
+            if (a.getZ() < zMin) {
+                near = b;
+                far = a;
+            }
+
+            double t = (zMin - near.getZ()) / (far.getZ() - near.getZ());
+
+            Vertex intersection = Lerp.compute(near, far, t);
+
+            if (a.getZ() < zMin) a = intersection;
+            else b = intersection;
+        }
+
+        a = a.dehomog().orElse(a);
+        b = b.dehomog().orElse(b);
+
+        a = transformToWindow(a);
+        b = transformToWindow(b);
+
+        lineRasterizer.rasterize(a, b);
+    }
+
 
     private void renderTriangle(Vertex c1, Vertex c2, Vertex c3,
                                 Vertex w1, Vertex w2, Vertex w3) {
