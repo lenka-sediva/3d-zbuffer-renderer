@@ -33,7 +33,7 @@ public class TriangleRasterizer {
         Col colB = vB.getColor();
         Col colC = vC.getColor();
 
-        // perspektivně korektní interpolace texturovacích souřadnic:
+        // perspektivně korektní interpolace texturovacích souřadnic
         // interpolace getTexUV() (= uv/w) a getOne() (= 1/w) zvlášť
         Vec2D uvA = vA.getTexUV();
         Vec2D uvB = vB.getTexUV();
@@ -124,7 +124,7 @@ public class TriangleRasterizer {
     }
 
     /**
-     * 2D cross product hrany AB vůči bodu P
+     * 2D skalární součin hrany AB vůči bodu P
      * Kladné = P leží vlevo od AB (stejná orientace jako zbytek trojúhelníku)
      */
     private static double edgeFunction(

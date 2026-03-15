@@ -24,15 +24,15 @@ public class Cube extends Solid {
 
         // odstíny modré pro každou stěnu
         Col colSide = new Col(0.2, 0.4, 1.0); // světle modrá = boční stěny
-        Col colTop = new Col(0.4, 0.6, 1.0); // velmi světlá modrá = horní
-        Col colBottom = new Col(0.0, 0.1, 0.6); // velmi tmavá modrá = spodní
+        Col colTop = new Col(0.4, 0.6, 1.0); // světlější modrá = horní
+        Col colBottom = new Col(0.0, 0.1, 0.6); // tmavá modrá = spodní
 
         // UV oblasti v atlasu (256x256, čtvrtiny 128x128)
         // boční stěna (hlína + tráva nahoře) = vlevo nahoře
-        Vec2D sideUV00 = new Vec2D(0.0, 1.0); // nahoře vlevo  → tráva
-        Vec2D sideUV10 = new Vec2D(0.5, 1.0); // nahoře vpravo → tráva
-        Vec2D sideUV01 = new Vec2D(0.0, 0.5); // dole vlevo    → hlína
-        Vec2D sideUV11 = new Vec2D(0.5, 0.5); // dole vpravo   → hlína
+        Vec2D sideUV00 = new Vec2D(0.0, 1.0); // nahoře vlevo => tráva
+        Vec2D sideUV10 = new Vec2D(0.5, 1.0); // nahoře vpravo => tráva
+        Vec2D sideUV01 = new Vec2D(0.0, 0.5); // dole vlevo => hlína
+        Vec2D sideUV11 = new Vec2D(0.5, 0.5); // dole vpravo => hlína
 
         // tráva = vpravo nahoře
         Vec2D grassUV00 = new Vec2D(0.5, 1.0);
@@ -107,11 +107,6 @@ public class Cube extends Solid {
     /**
      * Přidá stěnu jako 2 trojúhelníky (quad) od indexu base
      * Vertexy stěny jsou vždy 4 po sobě jdoucí: base, base+1, base+2, base+3
-     *  3 --- 2
-     *  |   / |
-     *  |  /  |
-     *  | /   |
-     *  0 --- 1
      */
     private void addFace(int base) {
         // první trojúhelník
@@ -127,5 +122,9 @@ public class Cube extends Solid {
         indexBuffer.add(base + 2);
         indexBuffer.add(base + 3);
         partBuffer.add(new Part(start, 3, TopologyType.TRIANGLE_LIST));
+    }
+
+    public Cube() {
+        this(new Point3D(2, 0, 0), 1.0);
     }
 }

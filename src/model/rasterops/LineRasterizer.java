@@ -31,10 +31,7 @@ public abstract class LineRasterizer {
     }
 
     public void rasterize(Vertex v1, Vertex v2) {
-        int width = raster.getWidth();
-        int height = raster.getHeight();
-
-        // už je v screen coordinates
+        // screen coordinates
         int x1 = (int) v1.getX();
         int y1 = (int) v1.getY();
         double z1 = v1.getZ();
@@ -43,7 +40,7 @@ public abstract class LineRasterizer {
         int y2 = (int) v2.getY();
         double z2 = v2.getZ();
 
-        // vezme barvu z prvního vertexu
+        // vezme barvu z 1. vertexu
         setColor(new Col(
                 (int) (v1.getColor().getR() * 255),
                 (int) (v1.getColor().getG() * 255),

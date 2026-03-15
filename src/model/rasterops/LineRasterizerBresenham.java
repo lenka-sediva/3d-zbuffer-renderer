@@ -43,7 +43,7 @@ public class LineRasterizerBresenham extends LineRasterizer {
         if (dx == 0 && dy == 0) dz = 0;
 
         while (true) {
-            // vykreslí pixel s Z testem
+            // vykreslí pixel se Z testem
             raster.setPixelWithZTest(x1, y1, z, color);
 
             if (x1 == x2 && y1 == y2) break; // konec při dosažení koncového bodu

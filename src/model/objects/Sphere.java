@@ -66,4 +66,8 @@ public class Sphere extends Solid {
             partBuffer.add(new Part(start, (slices + 1) * 2, TopologyType.TRIANGLE_STRIP));
         }
     }
+
+    public Sphere() {
+        this(new Point3D(-1, 2, 0), 1.0, 20, 20);
+    }
 }

@@ -12,18 +12,19 @@ import view.Canvas;
 import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import javax.swing.Timer;
 
 public class Controller {
     private final Canvas canvas;
     private final Visibility vB;
 
-    private final TriangleRasterizer triangleRasterizer;
-    private final LineRasterizer lineRasterizer;
+    private TriangleRasterizer triangleRasterizer;
+    private LineRasterizer lineRasterizer;
 
-    private final Solid tetrahedron, sphere, cylinder, cube, axis, bicubicSurface;
+    private Solid tetrahedron, sphere, cylinder, cube, axis, bicubicSurface;
     private Solid currentObject;
-    private final List<Solid> solids;
+    private List<Solid> solids;
 
     private final Renderer3D renderer;
     private Camera view;
@@ -32,15 +33,13 @@ public class Controller {
     private ProjectionType currentProjection = ProjectionType.PERSPECTIVE;
     private enum ModeType { SOLID, WIREFRAME }
     private ModeType currentMode = ModeType.SOLID;
-    private final FragmentShader constantColor, smoothColor, grassTexture, woodTexture, uvTexture;
+    private FragmentShader constantColor, smoothColor, grassTexture, woodTexture, uvTexture;
 
     // Phong a světlo
-    private final Light light;
-    private final Solid lightSphere;
+    private Light light;
+    private Solid lightSphere;
     private Timer lightTimer;
-    private double lightAngle = 0;
     private static final Point3D lightInitPosition = new Point3D(-2, -1, 2);
-    private double lightAnimRadius = 3.0;
 
     // myš
     private int lastMouseX, lastMouseY;
@@ -53,13 +52,19 @@ public class Controller {
         canvas.setVisibility(vB); // předání pro resize okna
         this.renderer = new Renderer3D();
 
-        tetrahedron = new Tetrahedron();
-        sphere = new Sphere(new Point3D(-1,2,0), 1.0, 20, 20);
-        cylinder = new Cylinder(new Point3D(-5,0,0), 1.0, 2.0, 20);
-        cube = new Cube(new Point3D(2, 0, 0), 1.0);
+        initObjects();
+        initListeners(canvas);
+        redraw();
+    }
+
+    private void initObjects() {
+        cube = new Cube();
         cube.setModelMatrix(new Mat4Rot(Math.toRadians(90), new Vec3D(1, 0, 0)));
+        tetrahedron = new Tetrahedron();
+        sphere = new Sphere();
+        cylinder = new Cylinder();
         axis = new Axis();
-        bicubicSurface = getBicubicSurface();
+        bicubicSurface = new BicubicSurface();
 
         solids = new ArrayList<>();
         solids.add(tetrahedron);
@@ -100,12 +105,9 @@ public class Controller {
         cylinder.setShader(new PhongColor(light));
         cube.setShader(new PhongColor(light));
         bicubicSurface.setShader(new PhongColor(light));
-
-        initListeners(canvas);
-        redraw();
     }
 
-    private void initObjects() {
+    private void renderScene() {
         vB.clear();
 
         renderer.setTriangleRasterizer(triangleRasterizer);
@@ -282,15 +284,7 @@ public class Controller {
                         if (lightTimer.isRunning()) {
                             lightTimer.stop();
                         } else {
-                            // začátek od aktuální pozice světla
-                            lightAngle = Math.atan2(
-                                    light.getPosition().getY(),
-                                    light.getPosition().getX()
-                            );
-                            // radius = skutečná vzdálenost světla od středu
-                            lightAnimRadius = Math.sqrt(
-                                    light.getPosition().getX() * light.getPosition().getX() + light.getPosition().getY() * light.getPosition().getY()
-                            );
+                            light.startAnimationFromCurrentPosition(); // začátek od aktuální pozice světla
                             lightTimer.start();
                         }
                         break;
@@ -321,8 +315,8 @@ public class Controller {
                 int dx = e.getX() - lastMouseX;
                 int dy = e.getY() - lastMouseY;
 
-                view = view.addAzimuth(dx * 0.005);  // citlivost horizontálního pohybu
-                view = view.addZenith(-dy * 0.005);  // citlivost vertikálního pohybu
+                view = view.addAzimuth(dx * 0.005); // citlivost horizontálního pohybu
+                view = view.addZenith(-dy * 0.005); // citlivost vertikálního pohybu
 
                 lastMouseX = e.getX();
                 lastMouseY = e.getY();
@@ -334,55 +328,32 @@ public class Controller {
         // ambientní složka osvětlení ze slideru
         canvas.getAmbientSlider().addChangeListener(_ -> {
             double ambient = canvas.getAmbientSlider().getValue() / 100.0;
-
-            for (Solid s : solids) {
-                if (s.getShader() instanceof PhongColor) {
-                    ((PhongColor) s.getShader()).setAmbient(ambient);
-                }
-            }
-
+            forEachPhong(phong -> phong.setAmbient(ambient));
             redraw();
         });
 
         // spekulární složka
         canvas.getSpecularSlider().addChangeListener(_ -> {
             double specular = canvas.getSpecularSlider().getValue() / 100.0;
-
-            for (Solid s : solids) {
-                if (s.getShader() instanceof PhongColor) {
-                    ((PhongColor) s.getShader()).setSpecularStrength(specular);
-                }
-            }
-
+            forEachPhong(phong -> phong.setSpecularStrength(specular));
             redraw();
         });
 
         // difúzní složka
         canvas.getDiffuseSlider().addChangeListener(_ -> {
             double diffuse = canvas.getDiffuseSlider().getValue() / 100.0;
-
-            for (Solid s : solids) {
-                if (s.getShader() instanceof PhongColor) {
-                    ((PhongColor) s.getShader()).setDiffuseStrength(diffuse);
-                }
-            }
-
+            forEachPhong(phong -> phong.setDiffuseStrength(diffuse));
             redraw();
         });
 
         // animace světla v čase
         lightTimer = new Timer(16, _ -> { // 60 FPS
-            lightAngle += 0.02;
-            double x = Math.cos(lightAngle) * lightAnimRadius;
-            double y = Math.sin(lightAngle) * lightAnimRadius;
-            double z = 2.0; // původní Z světla
+            light.animate(0.02);
 
-            light.setPosition(new Point3D(x, y, z));
-            lightSphere.setModelMatrix(new Mat4Transl(
-                    x - lightInitPosition.getX(),
-                    y - lightInitPosition.getY(),
-                    0
-            ));
+            Mat4 currentMatrix = lightSphere.getModelMatrix();
+            Mat4 rotation = new Mat4Rot(0.02, new Vec3D(0,0,1));
+            lightSphere.setModelMatrix(currentMatrix.mul(rotation));
+
             redraw();
         });
     }
@@ -450,40 +421,16 @@ public class Controller {
 
     private void updateCameraPos() {
         Vec3D eye = view.getEye();
-        for (Solid s : solids) {
-            if (s.getShader() instanceof PhongColor phong) {
-                phong.setCameraPos(eye);
-            }
-        }
+        forEachPhong(phong -> phong.setCameraPos(eye));
     }
 
-    // bikubická plocha
-    private BicubicSurface getBicubicSurface() {
-        Point3D[] controlPoints = new Point3D[] {
-                new Point3D(-1, -2, 0),
-                new Point3D(-0.5, -2, 1),
-                new Point3D(0.5, -2, -1),
-                new Point3D(1, -2, 0),
-
-                new Point3D(-1, -1.5, 1),
-                new Point3D(-0.5, -1.5, 2),
-                new Point3D(0.5, -1.5, 0),
-                new Point3D(1, -1.5, 1),
-
-                new Point3D(-1, -0.5, -1),
-                new Point3D(-0.5, -0.5, 0),
-                new Point3D(0.5, -0.5, 2),
-                new Point3D(1, -0.5, -1),
-
-                new Point3D(-1, 0, 0),
-                new Point3D(-0.5, 0, 1),
-                new Point3D(0.5, 0, -1),
-                new Point3D(1, 0, 0)
-        };
-
-        Bicubic bicubic = new Bicubic(Cubic.BEZIER, controlPoints);
-
-        return new BicubicSurface(bicubic, 20, 20);
+    // provede akci pro všechny objekty, které mají Phong shader
+    private void forEachPhong(Consumer<PhongColor> action) {
+        for (Solid s : solids) {
+            if (s.getShader() instanceof PhongColor phong) {
+                action.accept(phong);
+            }
+        }
     }
 
     private void hardClear() {
@@ -500,7 +447,7 @@ public class Controller {
         vB.clear();
 
         updateCameraPos(); // pro přepočet spekulární složky
-        initObjects();
+        renderScene();
 
         canvas.repaint();
     }

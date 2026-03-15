@@ -64,7 +64,7 @@ public class Renderer3D {
         List<Vertex> verticesWorld = new ArrayList<>(); // world space = pro Phong (normály, pozice)
 
         for (Vertex v : solid.getVertexBuffer()) {
-            verticesClip.add(v.transf(mvp));         // pozice do clip space
+            verticesClip.add(v.transf(mvp)); // pozice do clip space
             verticesWorld.add(v.transf(modelMatrix)); // pozice + normála do world space
         }
 

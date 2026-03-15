@@ -58,4 +58,34 @@ public class BicubicSurface extends Solid {
             partBuffer.add(new Part(start, 2 * (uCount + 1), TopologyType.TRIANGLE_STRIP));
         }
     }
+
+    private static Bicubic createBicubic() {
+        Point3D[] controlPoints = new Point3D[] {
+                new Point3D(-1, -2, 0),
+                new Point3D(-0.5, -2, 1),
+                new Point3D(0.5, -2, -1),
+                new Point3D(1, -2, 0),
+
+                new Point3D(-1, -1.5, 1),
+                new Point3D(-0.5, -1.5, 2),
+                new Point3D(0.5, -1.5, 0),
+                new Point3D(1, -1.5, 1),
+
+                new Point3D(-1, -0.5, -1),
+                new Point3D(-0.5, -0.5, 0),
+                new Point3D(0.5, -0.5, 2),
+                new Point3D(1, -0.5, -1),
+
+                new Point3D(-1, 0, 0),
+                new Point3D(-0.5, 0, 1),
+                new Point3D(0.5, 0, -1),
+                new Point3D(1, 0, 0)
+        };
+
+        return new Bicubic(Cubic.BEZIER, controlPoints);
+    }
+
+    public BicubicSurface() {
+        this(createBicubic(), 20, 20);
+    }
 }

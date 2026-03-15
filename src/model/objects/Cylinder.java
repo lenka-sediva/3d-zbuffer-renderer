@@ -117,4 +117,8 @@ public class Cylinder extends Solid {
             partBuffer.add(new Part(start, 3, TopologyType.TRIANGLE_LIST));
         }
     }
+
+    public Cylinder() {
+        this(new Point3D(-5, 0, 0), 1.0, 2.0, 20);
+    }
 }
