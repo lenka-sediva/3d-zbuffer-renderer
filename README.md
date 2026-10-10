@@ -2,6 +2,8 @@
 
 #### Semestrální projekt do předmětu Počítačová grafika 2 implementující 3D scénu s vlastním SW rendererem, Z-bufferem a Phongovým osvětlovacím modelem.
 
+<img src="img/screenshot.png" alt="Ukázka aplikace" width="100%">
+
 Celé vykreslování probíhá na CPU v čisté Javě (Swing slouží jen k zobrazení výsledného obrázku a k ovládání). Nepoužívá se OpenGL ani žádná jiná grafická knihovna. Transformace, ořezání, rasterizace, Z-test, interpolace i stínování jsou implementované v projektu.
 
 ---
