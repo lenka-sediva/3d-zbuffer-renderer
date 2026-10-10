@@ -5,8 +5,6 @@ import transforms.Col;
 import transforms.Point3D;
 import utilities.Lerp;
 
-import java.io.IO;
-
 public class TestLerp {
     public static void main(String[] args) {
         Vertex v1 = new Vertex(new Point3D(1,2,3), new Col(0xFF0000));
