@@ -19,7 +19,7 @@ public class TextureColor implements FragmentShader {
         } catch (IOException e) {
             texture = new BufferedImage(1,1, BufferedImage.TYPE_INT_RGB);
             texture.setRGB(0, 0, Color.MAGENTA.getRGB());
-            System.out.println("CHYBA načítání textury: " + e.getMessage());
+            System.out.println("ERROR loading texture: " + e.getMessage());
         }
     }
 

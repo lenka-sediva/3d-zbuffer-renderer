@@ -12,7 +12,7 @@ import transforms.Vec3D;
 public class Tetrahedron extends Solid {
 
     public Tetrahedron() {
-        super("čtyřstěn", "T");
+        super("tetrahedron", "T");
         double zOffset = 0.2;
 
         Point3D p0 = new Point3D( 0, 0.5, zOffset);

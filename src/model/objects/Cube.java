@@ -15,7 +15,7 @@ public class Cube extends Solid {
      * @param size   délka hrany
      */
     public Cube(Point3D center, double size) {
-        super("krychle", "K");
+        super("cube", "K");
 
         double h = size / 2.0;
         double cx = center.getX();

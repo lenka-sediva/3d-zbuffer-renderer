@@ -12,7 +12,7 @@ public class Cylinder extends Solid {
      * @param segments počet segmentů pro hladký vzhled (čím více, tím hladší)
      */
     public Cylinder(Point3D center, double radius, double height, int segments) {
-        super("válec", "V");
+        super("cylinder", "V");
         double halfHeight = height / 2.0;
         double cy = center.getY();
 

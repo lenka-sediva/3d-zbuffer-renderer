@@ -11,7 +11,7 @@ public class BicubicSurface extends Solid {
      * @param vCount počet vzorků podél V (vertikálně)
      */
     public BicubicSurface(Bicubic bicubic, int uCount, int vCount) {
-        super("bicubic", "B");
+        super("bicubic surface", "B");
 
         // generování vertexů
         for (int i = 0; i <= vCount; i++) {

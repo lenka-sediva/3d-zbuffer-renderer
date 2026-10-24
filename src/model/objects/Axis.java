@@ -12,7 +12,7 @@ import transforms.Vec3D;
 public class Axis extends Solid {
 
     public Axis() {
-        super("Osy XYZ", "-");
+        super("XYZ axes", "-");
 
         double len  = 1.0; // délka osy
         double head = 0.15; // délka hlavičky šipky

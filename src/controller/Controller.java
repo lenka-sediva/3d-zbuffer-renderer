@@ -196,7 +196,7 @@ public class Controller {
                                 ? ProjectionType.ORTHOGONAL // ortogonální projekce (pravoúhlá) = vzdálenost od kamery nemění velikost objektu
                                 : ProjectionType.PERSPECTIVE; // perspektivní projekce (výchozí) = vzdálenější objekty se jeví menší
                         canvas.setCurrentProjectionText(currentProjection == ProjectionType.PERSPECTIVE ?
-                                "Perspektivní projekce [P]" : " Ortogonální projekce [P]");
+                                "Perspective projection [P]" : "Orthographic projection [P]");
                         redraw();
                         break;
 
@@ -211,7 +211,7 @@ public class Controller {
                     case KeyEvent.VK_M:
                         currentMode = (currentMode == ModeType.SOLID) ? ModeType.WIREFRAME : ModeType.SOLID;
                         renderer.setWireframe(currentMode == ModeType.WIREFRAME);
-                        canvas.setCurrentMode(currentMode == ModeType.WIREFRAME ? "   Drátový model [M]" : "Vyplněný model [M]");
+                        canvas.setCurrentMode(currentMode == ModeType.WIREFRAME ? "Wireframe model [M]" : "Solid model [M]");
                         redraw();
                         break;
 
@@ -238,27 +238,27 @@ public class Controller {
 
                     // výběr aktuálního objektu
                     case KeyEvent.VK_T:
-                        select(tetrahedron, "čtyřstěn");
+                        select(tetrahedron, "tetrahedron");
                         break;
 
                     case KeyEvent.VK_V:
-                        select(cylinder, "válec");
+                        select(cylinder, "cylinder");
                         break;
 
                     case KeyEvent.VK_U:
-                        select(sphere, "koule");
+                        select(sphere, "sphere");
                         break;
 
                     case KeyEvent.VK_K:
-                        select(cube, "krychle");
+                        select(cube, "cube");
                         break;
 
                     case KeyEvent.VK_B:
-                        select(bicubicSurface, "bicubic");
+                        select(bicubicSurface, "bicubic surface");
                         break;
 
                     case KeyEvent.VK_L:
-                        select(lightSphere, "světlo");
+                        select(lightSphere, "light");
                         break;
 
                     // rotace

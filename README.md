@@ -1,47 +1,47 @@
-# Z-BUFFER
+# 3D Z-BUFFER RENDERER
 
-#### Semestrální projekt do předmětu Počítačová grafika 2 implementující 3D scénu s vlastním SW rendererem, Z-bufferem a Phongovým osvětlovacím modelem.
+#### A semester project for the Computer Graphics 2 course: a 3D scene with a custom software renderer, Z-buffer and Phong lighting model.
 
-<img src="img/screenshot.png" alt="Ukázka aplikace" width="100%">
+<img src="img/screenshot.png" alt="Application screenshot" width="100%">
 
-Celé vykreslování probíhá na CPU v čisté Javě (Swing slouží jen k zobrazení výsledného obrázku a k ovládání). Nepoužívá se OpenGL ani žádná jiná grafická knihovna. Transformace, ořezání, rasterizace, Z-test, interpolace i stínování jsou implementované v projektu.
-
----
-
-## Funkce
-
-- **Vlastní renderovací pipeline**: model → view → projekce (MVP), rychlé ořezání celého tělesa mimo zobrazovací objem, ořezání trojúhelníků i úseček podle near roviny (`clipZ`, `clipLineZ`), dehomogenizace a transformace do okna
-- **Z-buffer**: test hloubky pro každý pixel (`Visibility.setPixelWithZTest`), hloubka v intervalu ⟨0, 1⟩, menší hodnota = blíž ke kameře
-- **Rasterizace trojúhelníků** pomocí hranových funkcí a barycentrických souřadnic, **úseček** Bresenhamovým algoritmem
-- **Perspektivně korektní interpolace** texturovacích souřadnic (interpolace `uv/w` a `1/w`)
-- **Topologie**: `LINE_LIST`, `TRIANGLE_LIST`, `TRIANGLE_STRIP`
-- **Tělesa**: čtyřstěn, koule, válec (včetně vyplněných podstav), krychle, bikubická Bézierova plocha, osy XYZ se šipkami a koule, která představuje světlo
-- **Shadery** (fragment shadery):
-  - konstantní barva
-  - interpolovaná barva (Gouraudovo stínování)
-  - textura (každé těleso má svou: tráva z Minecraftu na krychli, překližka na válci a čtyřstěnu, UV mřížka na kouli a bikubické ploše)
-  - **Phongův osvětlovací model** s bodovým světlem, který se kombinuje s kterýmkoliv z předchozích shaderů (ambientní, difúzní a spekulární složka a útlum se vzdáleností)
-- **Animace světla**: světlo obíhá kolem osy Z
-- **Perspektivní / ortogonální projekce**
-- **Vyplněný / drátový model**
-- **Kamera** z pohledu 1. nebo 3. osoby, ovládání klávesnicí i myší
-- **Transformace vybraného objektu**: posun, rotace, změna velikosti kolem středu
-- **Změna velikosti okna**: barevný buffer i Z-buffer se přizpůsobí nové velikosti okna
+All rendering runs on the CPU in pure Java (Swing is used only to display the final image and to handle input). No OpenGL or any other graphics library is used. Transformations, clipping, rasterization, depth testing, interpolation and shading are all implemented in the project.
 
 ---
 
-## Požadavky a spuštění
+## Features
 
-- **JDK 25 nebo novější**: aplikace sama potřebuje JDK 22+ (`List.getFirst()` a nepojmenované proměnné `_` v lambdách), `TestLerp` navíc používá třídu `IO` z `java.lang`, která je k dispozici od JDK 25
-- Žádné externí závislosti ani build nástroj (Maven/Gradle). Projekt je připravený pro **IntelliJ IDEA** (zdrojová složka `src`)
+- **Custom rendering pipeline**: model → view → projection (MVP), fast culling of whole solids outside the view volume, clipping of triangles and lines against the near plane (`clipZ`, `clipLineZ`), dehomogenization and viewport transformation
+- **Z-buffer**: per-pixel depth test (`Visibility.setPixelWithZTest`), depth in the range ⟨0, 1⟩, smaller value = closer to the camera
+- **Triangle rasterization** using edge functions and barycentric coordinates, **line rasterization** using Bresenham's algorithm
+- **Perspective-correct interpolation** of texture coordinates (interpolating `uv/w` and `1/w`)
+- **Topologies**: `LINE_LIST`, `TRIANGLE_LIST`, `TRIANGLE_STRIP`
+- **Solids**: tetrahedron, sphere, cylinder (including filled caps), cube, bicubic Bézier surface, XYZ axes with arrows, and a sphere representing the light
+- **Shaders** (fragment shaders):
+  - constant color
+  - interpolated color (Gouraud shading)
+  - texture (each solid has its own: Minecraft grass on the cube, plywood on the cylinder and tetrahedron, a UV grid on the sphere and bicubic surface)
+  - **Phong lighting model** with a point light, combinable with any of the shaders above (ambient, diffuse and specular components, plus distance attenuation)
+- **Light animation**: the light orbits around the Z axis
+- **Perspective / orthographic projection**
+- **Solid / wireframe model**
+- **Camera** in 1st or 3rd person view, controlled by keyboard and mouse
+- **Transforming the selected object**: translation, rotation, scaling around its center
+- **Window resizing**: both the color buffer and the Z-buffer adapt to the new window size
+
+---
+
+## Requirements and running
+
+- **JDK 25 or newer**: the application itself needs JDK 22+ (`List.getFirst()` and unnamed variables `_` in lambdas); `TestLerp` additionally uses the `IO` class from `java.lang`, available since JDK 25
+- No external dependencies and no build tool (Maven/Gradle). The project is set up for **IntelliJ IDEA** (source folder `src`)
 
 ### IntelliJ IDEA
-1. Otevřete složku projektu.
-2. Nastavte Project SDK na JDK 22+.
-3. Spusťte `app.App`.
+1. Open the project folder.
+2. Set the Project SDK to JDK 22+.
+3. Run `app.App`.
 
-### Příkazová řádka
-Spouštějte z kořene projektu, protože textury se načítají relativní cestou `res/...`.
+### Command line
+Run from the project root, because textures are loaded via the relative path `res/...`.
 
 ```bash
 javac -d out $(find src -name "*.java")
@@ -50,90 +50,90 @@ java -cp out app.App
 
 ---
 
-## Ovládání
+## Controls
 
-Nápověda se zobrazuje i přímo v okně aplikace.
+A help overlay is also shown directly in the application window.
 
-### Pozorovatel (kamera)
-| Klávesa | Akce |
+### Observer (camera)
+| Key | Action |
 |---|---|
-| `W` `A` `S` `D` | pohyb dopředu / doleva / dozadu / doprava |
-| `Q` / `E` | otočení doleva / doprava |
-| `Shift` / `Ctrl` | pohled nahoru / dolů |
-| tažení myší | rozhlížení |
-| `Mezerník` | přepnutí mezi 1. a 3. osobou |
+| `W` `A` `S` `D` | move forward / left / backward / right |
+| `Q` / `E` | turn left / right |
+| `Shift` / `Ctrl` | look up / down |
+| mouse drag | look around |
+| `Space` | toggle between 1st and 3rd person |
 
-### Výběr objektu
-| Klávesa | Objekt |
+### Object selection
+| Key | Object |
 |---|---|
-| `T` | čtyřstěn |
-| `U` | koule |
-| `V` | válec |
-| `K` | krychle |
-| `B` | bikubická plocha |
-| `L` | světlo |
+| `T` | tetrahedron |
+| `U` | sphere |
+| `V` | cylinder |
+| `K` | cube |
+| `B` | bicubic surface |
+| `L` | light |
 
-### Transformace vybraného objektu
-| Klávesa | Akce |
+### Transforming the selected object
+| Key | Action |
 |---|---|
-| šipky | posun v rovině XY |
-| `X` / `Y` / `Z` | rotace o 90° kolem dané osy |
-| `+` / `-` | zvětšení / zmenšení |
+| arrow keys | move in the XY plane |
+| `X` / `Y` / `Z` | rotate 90° around the given axis |
+| `+` / `-` | enlarge / shrink |
 
-### Zobrazení a osvětlení
-| Klávesa | Akce |
+### Display and lighting
+| Key | Action |
 |---|---|
-| `1` | konstantní barva |
-| `2` | interpolovaná barva |
-| `3` | textura |
-| `M` | vyplněný / drátový model |
-| `P` | perspektivní / ortogonální projekce |
-| `R` | spuštění / zastavení animace světla |
-| `O` | návrat všech objektů a světla do původního stavu |
-| `C` | smazání scény |
-| posuvníky nahoře | intenzita ambientní, difúzní a spekulární složky |
+| `1` | constant color |
+| `2` | interpolated color |
+| `3` | texture |
+| `M` | solid / wireframe model |
+| `P` | perspective / orthographic projection |
+| `R` | start / stop light animation |
+| `O` | reset all objects and the light to their initial state |
+| `C` | clear the scene |
+| sliders at the top | intensity of the ambient, diffuse and specular components |
 
-Shadery `1`–`3` se nastavují jen aktuálně vybranému objektu a Phongovo osvětlení zůstává aplikované i na texturu.
+Shaders `1`–`3` are applied only to the currently selected object, and Phong lighting stays applied on top of the texture as well.
 
 ---
 
-## Struktura projektu
+## Project structure
 
 ```
 src/
-├── app/            vstupní bod (App), testy Z-bufferu (ZBufferTest) a interpolace (TestLerp)
-├── controller/     Controller: inicializace scény, obsluha klávesnice, myši a posuvníků
+├── app/            entry point (App), Z-buffer test (ZBufferTest) and interpolation test (TestLerp)
+├── controller/     Controller: scene setup, keyboard, mouse and slider handling
 ├── model/
 │   ├── objectdata/ Vertex, Part, Solid (vertex/index/part buffer), TopologyType
-│   ├── objects/    tělesa (Cube, Sphere, Cylinder, Tetrahedron, BicubicSurface, Axis, Arrow) a Light
+│   ├── objects/    solids (Cube, Sphere, Cylinder, Tetrahedron, BicubicSurface, Axis, Arrow) and Light
 │   ├── rasterdata/ ColorBuffer, DepthBuffer, Visibility (Z-test)
 │   ├── rasterops/  TriangleRasterizer, LineRasterizerBresenham
-│   └── renderer/   Renderer3D: transformace, ořezání a předání rasterizérům
-├── shader/         FragmentShader a jeho implementace (ConstantColor, SmoothColor, TextureColor, PhongColor)
-├── transforms/     knihovna pro matice, vektory, kameru, barvy, kubiky a bikubiky (Mat4, Vec3D, Camera, Col, Bicubic, …)
-├── utilities/      Lerp (lineární interpolace), Vectorizable
-└── view/           Window (JFrame), Canvas (vykreslení rastru, UI a posuvníků)
-res/                textury
-img/                obrázky k zadání (pseudokód Z-testu, ukázka testu)
+│   └── renderer/   Renderer3D: transformation, clipping and passing data to the rasterizers
+├── shader/         FragmentShader and its implementations (ConstantColor, SmoothColor, TextureColor, PhongColor)
+├── transforms/     library for matrices, vectors, camera, colors, cubics and bicubics (Mat4, Vec3D, Camera, Col, Bicubic, …)
+├── utilities/      Lerp (linear interpolation), Vectorizable
+└── view/           Window (JFrame), Canvas (raster, UI and slider rendering)
+res/                textures
+img/                images for the assignment (Z-test pseudocode, test example)
 ```
 
-### Průchod vrcholu pipeline
+### A vertex's path through the pipeline
 
-1. **Vertex buffer** tělesa se transformuje maticí `model · view · projection` do clip space a zároveň modelovou maticí do world space, protože Phongův model potřebuje světové pozice a normály.
-2. **Rychlé ořezání**: pokud všechny vrcholy leží mimo stejnou stěnu zobrazovacího objemu, těleso se vůbec nevykresluje.
-3. **Ořezání podle near roviny**: trojúhelník se zahodí, zkrátí na menší trojúhelník, nebo rozdělí na dva.
-4. **Dehomogenizace** (dělení `w`) a **transformace do okna** (osa Y míří dolů).
-5. **Rasterizace**: pro každý pixel v obalovém obdélníku se spočítají barycentrické souřadnice, interpoluje se hloubka, barva, UV, normála a světová pozice. Výsledek zpracuje shader a zapíše se přes Z-test.
+1. The solid's **vertex buffer** is transformed by the `model · view · projection` matrix into clip space, and also by the model matrix into world space, because the Phong model needs world-space positions and normals.
+2. **Fast culling**: if all vertices lie outside the same face of the view volume, the solid is not rendered at all.
+3. **Near-plane clipping**: a triangle is discarded, cut down to a smaller triangle, or split into two.
+4. **Dehomogenization** (division by `w`) and **viewport transformation** (the Y axis points down).
+5. **Rasterization**: for each pixel in the bounding rectangle, barycentric coordinates are computed and depth, color, UV, normal and world position are interpolated. The result is processed by the shader and written through the Z-test.
 
-> Matice v knihovně `transforms` používají konvenci řádkových vektorů, proto se násobí v pořadí `model.mul(view).mul(proj)`.
+> Matrices in the `transforms` library use the row-vector convention, so they are multiplied in the order `model.mul(view).mul(proj)`.
 
 
 ---
 
-## Textury
+## Textures
 
-| Soubor | Použití |
+| File | Used on |
 |---|---|
-| `res/mc_grass.jpg` | krychle |
-| `res/plywood_diff_4k.jpg` | válec, čtyřstěn |
-| `res/uv_grid.jpg` | koule, bikubická plocha |
+| `res/mc_grass.jpg` | cube |
+| `res/plywood_diff_4k.jpg` | cylinder, tetrahedron |
+| `res/uv_grid.jpg` | sphere, bicubic surface |

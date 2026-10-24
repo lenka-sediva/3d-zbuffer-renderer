@@ -14,10 +14,10 @@ import java.util.List;
 public class Canvas extends JPanel {
     private final ColorBuffer raster;
     private List<Solid> solids;
-    private String currentObjectName = "čtyřstěn";
-    private String currentProjectionText = "Perspektivní projekce [P]";
-    private String currentMode = "Vyplněný model [M]";
-    private String currentCameraMode = "3. osoba [MEZERNÍK] ";
+    private String currentObjectName = "tetrahedron";
+    private String currentProjectionText = "Perspective projection [P]";
+    private String currentMode = "Solid model [M]";
+    private String currentCameraMode = "3rd person";
     private Solid lightSphere;
     private final JSlider ambientSlider;
     private final JSlider specularSlider;
@@ -54,9 +54,9 @@ public class Canvas extends JPanel {
         sliders.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 5));
         sliders.setOpaque(false); // aby nezakrýval celý horní renderovaný obraz
 
-        sliders.add(labeledSlider("Ambientní složka", ambientSlider));
-        sliders.add(labeledSlider("Difúzní složka", diffuseSlider));
-        sliders.add(labeledSlider("Spekulární složka", specularSlider));
+        sliders.add(labeledSlider("Ambient component", ambientSlider));
+        sliders.add(labeledSlider("Diffuse component", diffuseSlider));
+        sliders.add(labeledSlider("Specular component", specularSlider));
 
         add(sliders, BorderLayout.NORTH);
 
@@ -108,7 +108,7 @@ public class Canvas extends JPanel {
     }
 
     public void setCurrentCameraMode(boolean firstPerson) {
-        this.currentCameraMode = firstPerson ? "1. osoba" : "3. osoba";
+        this.currentCameraMode = firstPerson ? "1st person" : "3rd person";
         repaint();
     }
 
@@ -144,16 +144,17 @@ public class Canvas extends JPanel {
 
         // levý dolní roh = nápověda
         g.setColor(Color.ORANGE);
-        g.drawString("Nápověda:", 10, getHeight() - 160);
+        g.drawString("Help:", 10, getHeight() - 160);
         g.setColor(Color.WHITE);
-        g.drawString("[šipky] posun objektu", 10, getHeight() - 135);
-        g.drawString("[R] animace světla v čase", 10, getHeight() - 110);
-        g.drawString("[+] zvětšení objektu, [-] zmenšení objektu", 10, getHeight() - 85);
-        g.drawString("[1] konstantní barva, [2] interpolovaná, [3] textura", 10, getHeight() - 60);
-        g.drawString("[C] smazání, [O] původní stav, [XYZ] rotace podle os", 10, getHeight() - 35);
-        g.drawString("Aktuálně vybraný objekt: ", 10, getHeight() - 10);
+        g.drawString("[arrows] move object", 10, getHeight() - 135);
+        g.drawString("[R] animate light over time", 10, getHeight() - 110);
+        g.drawString("[+] enlarge object, [-] shrink object", 10, getHeight() - 85);
+        g.drawString("[1] constant color, [2] interpolated, [3] texture", 10, getHeight() - 60);
+        g.drawString("[C] clear, [O] reset, [XYZ] rotate around axis", 10, getHeight() - 35);
+        String selectedLabel = "Selected object: ";
+        g.drawString(selectedLabel, 10, getHeight() - 10);
         g.setColor(Color.ORANGE);
-        g.drawString(currentObjectName, 205, getHeight() - 10);
+        g.drawString(currentObjectName, 10 + g.getFontMetrics().stringWidth(selectedLabel), getHeight() - 10);
 
         // levý horní roh = seznam objektů
         int y = 25;
@@ -174,22 +175,27 @@ public class Canvas extends JPanel {
             } else {
                 g.setColor(Color.WHITE);
             }
-            g.drawString("[L] světlo", 10, y);
+            g.drawString("[L] light", 10, y);
         }
 
         // pravý dolní roh = model + projekce
         g.setColor(Color.WHITE);
-        g.drawString(currentMode, getWidth() - 160, getHeight() - 35);
-        g.drawString(currentProjectionText, getWidth() - 200, getHeight() - 10);
+        drawStringRight(g, currentMode, getHeight() - 35);
+        drawStringRight(g, currentProjectionText, getHeight() - 10);
 
         // pravý horní roh = pozorovatel
         g.setColor(Color.ORANGE);
-        g.drawString("Pozorovatel:", getWidth() - 105, 25);
+        drawStringRight(g, "Camera:", 25);
         g.setColor(Color.WHITE);
-        g.drawString("[WASD] pohyb", getWidth() - 120, 50);
-        g.drawString("[Q] vlevo, [E] vpravo", getWidth() - 160, 75);
-        g.drawString("[SHIFT] nahoru, [CTRL] dolů", getWidth() - 225, 100);
-        g.drawString(currentCameraMode + " [MEZERNÍK]", getWidth() - 170, 125);
+        drawStringRight(g, "[WASD] move", 50);
+        drawStringRight(g, "[Q] turn left, [E] turn right", 75);
+        drawStringRight(g, "[SHIFT] look up, [CTRL] look down", 100);
+        drawStringRight(g, currentCameraMode + " [SPACE]", 125);
+    }
+
+    // text zarovnaný k pravému okraji okna (odsazení 10 px)
+    private void drawStringRight(Graphics g, String text, int y) {
+        g.drawString(text, getWidth() - 10 - g.getFontMetrics().stringWidth(text), y);
     }
 
     public ColorBuffer getRaster() {
