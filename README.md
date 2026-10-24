@@ -137,3 +137,13 @@ img/                images for the assignment (Z-test pseudocode, test example)
 | `res/mc_grass.jpg` | cube |
 | `res/plywood_diff_4k.jpg` | cylinder, tetrahedron |
 | `res/uv_grid.jpg` | sphere, bicubic surface |
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+The following parts are not covered by this license and remain the property of their respective authors:
+- `src/transforms/`: the matrix and vector library provided by PGRF FIM UHK as part of the course template
+- textures in `res/`
