@@ -127,14 +127,6 @@ img/                obrázky k zadání (pseudokód Z-testu, ukázka testu)
 
 > Matice v knihovně `transforms` používají konvenci řádkových vektorů, proto se násobí v pořadí `model.mul(view).mul(proj)`.
 
----
-
-## Z-test
-
-Pseudokód testu hloubky a ověření správného překrývání (`app.ZBufferTest`):
-
-![Pseudokód Z-testu](img/Z-Buffer_Implementace_PGRF2.jpg)
-![Z-Test](img/Z-Test.jpg)
 
 ---
 
